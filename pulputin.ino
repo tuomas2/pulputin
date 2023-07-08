@@ -10,8 +10,8 @@ static const int BUTTON6_PIN = 49;
 static const int BUTTON7_PIN = 51;
 static const int BUTTON8_PIN = 53;
 
-static const int IN_MOISTURE_PIN = 0; // Analog 0
-static const int IN_WATER_THROUGH_PIN = 22;
+static const int IN_MOISTURE1_PIN = A0;
+static const int IN_MOISTURE2_PIN = A1;
 
 static const int OUT_PUMP_PIN = 3; // PWM possible
 
@@ -36,9 +36,14 @@ static const byte IS_CONFIGURED = 0b10101010;
 
 void setup()
 {
+  initializePins();
   initializeStatistics();
   lcd.init();
+  readInput();
   updateLcd();
+}
+
+void initializePins() {
   pinMode(BUTTON1_PIN, INPUT_PULLUP);
   pinMode(BUTTON2_PIN, INPUT_PULLUP);
   pinMode(BUTTON3_PIN, INPUT_PULLUP);
@@ -47,11 +52,11 @@ void setup()
   pinMode(BUTTON6_PIN, INPUT_PULLUP);
   pinMode(BUTTON7_PIN, INPUT_PULLUP);
   pinMode(BUTTON8_PIN, INPUT_PULLUP);
-
-  pinMode(IN_MOISTURE_PIN, INPUT);
-  pinMode(IN_WATER_THROUGH_PIN, INPUT_PULLUP);
+  pinMode(IN_MOISTURE1_PIN, INPUT);
+  pinMode(IN_MOISTURE2_PIN, INPUT);
   pinMode(OUT_PUMP_PIN, OUTPUT);
   digitalWrite(OUT_PUMP_PIN, LOW);
+
 }
 
 void initializeStatistics() {
@@ -84,23 +89,39 @@ void resetEEPROM() {
   eeprom_write_byte(EEPROM_CONFIGURED, IS_CONFIGURED);
 }
 
+
+int moisture1Percent = 0;
+int moisture2Percent = 0;
+
+bool button1Pressed = false;
+bool button2Pressed = false;
+
 void updateLcd() {
   int total = 0;
   for(int i = 0; i< 24; i++) {
     total += pumpStatistics[i];
   }
-  snprintf(lcdBuf, 16, "%d ml/24h", total);
-  
-  lcd.clear();
+  snprintf(lcdBuf, 16, "%d ml/d %d %d", total, button1Pressed, button2Pressed);
   lcd.setCursor(0,0);
   lcd.print(lcdBuf);
   lcd.setCursor(0,1);
-  snprintf(lcdBuf, 16, "That's all");
-
+  snprintf(lcdBuf, 16, "%3d%% %3d%%", moisture1Percent, moisture2Percent);
   lcd.print(lcdBuf);
 }
 
 
-void loop()
-{
+void readInput() {
+  button1Pressed = !digitalRead(BUTTON1_PIN);
+  button2Pressed = !digitalRead(BUTTON2_PIN);
+  
+  int moist1 = analogRead(IN_MOISTURE1_PIN);
+  int moist2 = analogRead(IN_MOISTURE2_PIN);
+
+  moisture1Percent = 100-(int)((float)moist1/1023.*100);
+  moisture2Percent = 100-(int)((float)moist2/1023.*100);
+}
+
+void loop() {
+  readInput();
+  updateLcd();
 }
