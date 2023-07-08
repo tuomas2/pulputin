@@ -13,11 +13,18 @@ static const int BUTTON8_PIN = 53;
 static const int IN_MOISTURE1_PIN = A0;
 static const int IN_MOISTURE2_PIN = A1;
 
-static const int OUT_PUMP_PIN = 3; // PWM possible
+static const int OUT_PUMP_PIN = LED_BUILTIN; // 2; // PWM possible
 
 int lastHourStarted = 0;
 
 static const int EEPROM_PUMP_STATISTICS=0;
+static const int PUMP_PORTION = 10; // ml
+static const int PUMP_WATER_SPEED = 133; // ml per 100 seconds
+
+// Convert millilitres to milliseconds
+int mlToMs(int millilitres) {
+  return 100000 * millilitres / PUMP_WATER_SPEED;
+}
 
 uint8_t pumpStatistics[24]; // How many ml water has been pumped each hour
 // Latest is first item. 
@@ -101,11 +108,11 @@ void updateLcd() {
   for(int i = 0; i< 24; i++) {
     total += pumpStatistics[i];
   }
-  snprintf(lcdBuf, 16, "%d ml/d %d %d", total, button1Pressed, button2Pressed);
+  snprintf(lcdBuf, 16, "%d ml/d", total);
   lcd.setCursor(0,0);
   lcd.print(lcdBuf);
   lcd.setCursor(0,1);
-  snprintf(lcdBuf, 16, "%3d%% %3d%%", moisture1Percent, moisture2Percent);
+  snprintf(lcdBuf, 16, "m1: %d%% m2: %d%%            ", moisture1Percent, moisture2Percent);
   lcd.print(lcdBuf);
 }
 
@@ -121,7 +128,60 @@ void readInput() {
   moisture2Percent = 100-(int)((float)moist2/1023.*100);
 }
 
+int pumpStarted = 0;
+int stopPumpMs = 0;
+
+int idleStartedMs = 0;
+const int IDLE_TIME = 10000; // ms
+
+
+void startPump() {
+  stopPumpMs = millis() + mlToMs(PUMP_PORTION);
+  digitalWrite(OUT_PUMP_PIN, HIGH);
+  idleStartedMs = 0;
+}
+
+bool isPumpRunning() {
+  return stopPumpMs > 0;
+}
+
+void stopPump() {
+  digitalWrite(OUT_PUMP_PIN, LOW);
+  stopPumpMs = 0;
+  idleStartedMs = millis();
+}
+
+const int MAX_MOISTURE = 1; // percent
+
+// During idle time
+int minMoisture = 101;
+int maxMoisture = -1;
+
+void updateMoisture() {
+  if(moisture1Percent < minMoisture) {
+    minMoisture = moisture1Percent;
+  }
+  if(moisture1Percent > maxMoisture) {
+    maxMoisture = moisture1Percent;
+  }
+}
+
+void manageWaterPump() {
+  updateMoisture();
+  
+  if (isPumpRunning()) {
+    if(millis() > stopPumpMs) {
+      stopPump();
+    }
+  } else {
+    if(millis() > idleStartedMs + IDLE_TIME && maxMoisture < MAX_MOISTURE) {
+      startPump();
+    }
+  }
+}
+
 void loop() {
   readInput();
+  manageWaterPump();
   updateLcd();
 }
