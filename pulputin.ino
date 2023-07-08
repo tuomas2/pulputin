@@ -15,24 +15,19 @@ static const int IN_MOISTURE2_PIN = A1;
 
 static const int OUT_PUMP_PIN = 2; // PWM possible
 
-unsigned long lastHourStarted = 0;
-
 static const int EEPROM_PUMP_STATISTICS = 0;
 
 static const int PUMP_PORTION = 10;       // ml
 static const int PUMP_WATER_SPEED = 133;  // ml per 100 seconds
-
-unsigned long timeNow = 0;
 
 static const int MAX_DRY_MOISTURE = 5;  // percent
 static const int MIN_WET_MOISTURE = 5;  // percent
 
 static const int ONE_HOUR = 3600000;
 
-// During idle time
-int minMoisture = 101;
-int maxMoisture = -1;
-
+int moisture1Percent = 0;
+int moisture2Percent = 0;
+int maxMoisture = 0; // During idle time
 
 uint8_t pumpStatistics[24];  // How many ml water has been pumped each hour
 // Latest is first item.
@@ -47,9 +42,8 @@ static const int MILLILITRES_PER_MINUTE = 80;
 
 static const byte IS_CONFIGURED = 0b10101010;
 
-int moisture1Percent = 0;
-int moisture2Percent = 0;
-
+unsigned long timeNow = 0;
+unsigned long lastHourStarted = 0;
 unsigned long pumpStartedMs = 0;
 unsigned long idleStartedMs = 0;
 unsigned long lastWetMs = 0;
@@ -90,6 +84,7 @@ void initializePins() {
   pinMode(OUT_PUMP_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(OUT_PUMP_PIN, LOW);
 }
 
 void initializeStatistics() {
@@ -179,12 +174,16 @@ void startPump() {
   pumpRunning = true;
   pumpStartedMs = timeNow;
   digitalWrite(OUT_PUMP_PIN, HIGH);
+  digitalWrite(LED_BUILTIN, HIGH);
+
   resetMoisture();
 }
 
 void stopPump() {
   pumpRunning = false;
   digitalWrite(OUT_PUMP_PIN, LOW);
+  digitalWrite(LED_BUILTIN, LOW);
+
   pumpStatistics[0] += PUMP_PORTION;
   savePumpStatistics();
   idleStartedMs = timeNow;
@@ -192,16 +191,12 @@ void stopPump() {
 
 
 void updateMoisture() {
-  if (moisture1Percent < minMoisture) {
-    minMoisture = moisture1Percent;
-  }
   if (moisture1Percent > maxMoisture) {
     maxMoisture = moisture1Percent;
   }
 }
 
 void resetMoisture() {
-  minMoisture = moisture1Percent;
   maxMoisture = moisture1Percent;
 }
 
