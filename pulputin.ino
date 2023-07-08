@@ -140,7 +140,7 @@ void updateLcd() {
     for (int i = 0; i < 24; i++) {
       total += pumpStatistics[i];
     }
-    snprintf(lcdBuf1, SIZE, "%d ml/d %d min           ", total, pumpLastStartedAgo);
+    snprintf(lcdBuf1, SIZE, "%d dl/d %d min           ", total/100, pumpLastStartedAgo);
     if (button1Pressed) {
       snprintf(lcdBuf2, SIZE, "m1: %d%% m2: %d%%            ", moisture1Percent, moisture2Percent);
     } else {
@@ -154,6 +154,8 @@ void updateLcd() {
 }
 
 bool resetButtonPressed = false;
+bool backlightButtonPressed = false;
+bool backlightOn = false;
 
 void readInput() {
   bool r = !digitalRead(BUTTON8_PIN);
@@ -162,6 +164,17 @@ void readInput() {
     initializeStatistics();
   }
   resetButtonPressed = r;
+  bool b1 = !digitalRead(BUTTON3_PIN);
+  if (b1 != backlightButtonPressed && b1) {
+    backlightOn = !backlightOn;
+    if(backlightOn) {
+      lcd.backlight(); 
+    } else {
+      lcd.noBacklight();
+    }
+  }
+  backlightButtonPressed = b1;
+
 
   int moist1 = analogRead(IN_MOISTURE1_PIN);
   int moist2 = analogRead(IN_MOISTURE2_PIN);
