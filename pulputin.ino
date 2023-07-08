@@ -13,7 +13,7 @@ static const int BUTTON8_PIN = 53;
 static const int IN_MOISTURE1_PIN = A0;
 static const int IN_MOISTURE2_PIN = A1;
 
-static const int OUT_PUMP_PIN = LED_BUILTIN;  // 2; // PWM possible
+static const int OUT_PUMP_PIN = 2; // PWM possible
 
 unsigned long lastHourStarted = 0;
 
@@ -50,13 +50,11 @@ static const byte IS_CONFIGURED = 0b10101010;
 int moisture1Percent = 0;
 int moisture2Percent = 0;
 
-bool button1Pressed = false;
-bool button2Pressed = false;
-
 unsigned long pumpStartedMs = 0;
 unsigned long idleStartedMs = 0;
 unsigned long lastWetMs = 0;
 
+bool wasWet = false;
 bool pumpRunning = false;
 
 
@@ -90,6 +88,8 @@ void initializePins() {
   pinMode(IN_MOISTURE1_PIN, INPUT);
   pinMode(IN_MOISTURE2_PIN, INPUT);
   pinMode(OUT_PUMP_PIN, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
 void initializeStatistics() {
@@ -127,14 +127,19 @@ void updateLcd() {
   char lcdBuf1[SIZE];
   char lcdBuf2[SIZE];
 
-  bool showTimes = !digitalRead(BUTTON3_PIN);
-  int pumpLastStartedAgo = (int)(timeNow - pumpStartedMs) / 1000 / 60;
+  bool showTimes = !digitalRead(BUTTON1_PIN);
+  bool button1Pressed = !digitalRead(BUTTON2_PIN);
+
+  int pumpLastStartedAgo = (timeNow - pumpStartedMs) / 1000 / 60;
   
   if (showTimes) {  
-    int wetLastAgo = (int)(timeNow - lastWetMs) / 1000 / 60;
-
-    snprintf(lcdBuf1, SIZE, "Pump %d min             ", pumpLastStartedAgo);
-    snprintf(lcdBuf2, SIZE, "Wet %d min              ", wetLastAgo);
+    snprintf(lcdBuf1, SIZE, "Pump %d min ago            ", pumpLastStartedAgo);
+    if(wasWet) {
+      int wetLastAgo = (timeNow - lastWetMs) / 1000 / 60;
+      snprintf(lcdBuf2, SIZE, "Wet %d min              ", wetLastAgo);
+    } else {
+      snprintf(lcdBuf2, SIZE, "Was not wet yet     ");
+    }
   } else {
     int total = 0;
     for (int i = 0; i < 24; i++) {
@@ -153,14 +158,15 @@ void updateLcd() {
   lcd.print(lcdBuf2);
 }
 
+bool resetButtonPressed = false;
+
 void readInput() {
-  button1Pressed = !digitalRead(BUTTON1_PIN);
-  bool b2 = !digitalRead(BUTTON2_PIN);
-  if (b2 != button2Pressed) {
+  bool r = !digitalRead(BUTTON8_PIN);
+  if (r != resetButtonPressed && r) {
     resetEEPROM();
     initializeStatistics();
   }
-  button2Pressed = b2;
+  resetButtonPressed = r;
 
   int moist1 = analogRead(IN_MOISTURE1_PIN);
   int moist2 = analogRead(IN_MOISTURE2_PIN);
@@ -208,14 +214,15 @@ bool idleTimePassed() {
 }
 
 bool wetRecently() {
-  return timeNow - lastWetMs < WET_TIME;
+  return wasWet && timeNow - lastWetMs < WET_TIME;
 }
 
 void manageWaterPump() {
   updateMoisture();
 
-  if (minMoisture > MIN_WET_MOISTURE) {
+  if (maxMoisture > MIN_WET_MOISTURE) {
     lastWetMs = timeNow;
+    wasWet = true;
   }
 
   if (pumpRunning) {
@@ -231,7 +238,6 @@ void manageWaterPump() {
     }
   }
 }
-
 
 void loop() {
   timeNow = millis();
