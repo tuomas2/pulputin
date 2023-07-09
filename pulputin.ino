@@ -1,3 +1,6 @@
+// Copyright (C) 2023 Tuomas Airaksinen
+// License: GPL. See GPL.txt for more info
+
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
 
