@@ -29,14 +29,14 @@ int moisture1Percent = 0;
 int moisture2Percent = 0;
 int maxMoisture = 0; // During idle time
 
-uint8_t pumpStatistics[24];  // How many ml water has been pumped each hour
+uint16_t pumpStatistics[24];  // How many ml water has been pumped each hour
 // Latest is first item.
 // Once an hour last item is removed and each item is moved one forward.
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 
-static const int EEPROM_CONFIGURED = 24;
-static const int EEPROM_LAST = 24;
+static const int EEPROM_CONFIGURED = 48;
+static const int EEPROM_LAST = 48;
 
 static const int MILLILITRES_PER_MINUTE = 80;
 
@@ -92,13 +92,13 @@ void initializeStatistics() {
     resetEEPROM();
   }
   for (int i = 0; i < 24; i++) {
-    pumpStatistics[i] = eeprom_read_byte(EEPROM_PUMP_STATISTICS + i);
+    pumpStatistics[i] = eeprom_read_word(EEPROM_PUMP_STATISTICS + i*2);
   }
 }
 
 void savePumpStatistics() {
   for (int i = 0; i < 24; i++) {
-    eeprom_write_byte(EEPROM_PUMP_STATISTICS + i, pumpStatistics[i]);
+    eeprom_write_word(EEPROM_PUMP_STATISTICS + i*2, pumpStatistics[i]);
   }
 }
 
