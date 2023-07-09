@@ -18,15 +18,12 @@ static const int IN_MOISTURE2_PIN = A1;
 
 static const int OUT_PUMP_PIN = 2; // PWM possible
 
-static const int EEPROM_PUMP_STATISTICS = 0;
 
 static const int PUMP_PORTION = 10;       // ml
 static const int PUMP_WATER_SPEED = 133;  // ml per 100 seconds
 
 static const int MAX_DRY_MOISTURE = 5;  // percent
 static const int MIN_WET_MOISTURE = 5;  // percent
-
-static const int ONE_HOUR = 3600000;
 
 int moisture1Percent = 0;
 int moisture2Percent = 0;
@@ -38,6 +35,8 @@ uint16_t pumpStatistics[24];  // How many ml water has been pumped each hour
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 
+// EEPROM addresses
+static const int EEPROM_PUMP_STATISTICS = 0;
 static const int EEPROM_CONFIGURED = 48;
 static const int EEPROM_LAST = 48;
 
@@ -54,15 +53,15 @@ unsigned long lastWetMs = 0;
 bool wasWet = false;
 bool pumpRunning = false;
 
-
 // Convert millilitres to milliseconds
 unsigned long mlToMs(int millilitres) {
   return 100000 * millilitres / PUMP_WATER_SPEED;
 }
 
-const unsigned long PUMP_TIME = mlToMs(PUMP_PORTION);
-const unsigned long IDLE_TIME = PUMP_TIME * 10;
-const unsigned long WET_TIME = ONE_HOUR;
+static const unsigned long ONE_HOUR = 3600000;
+static const unsigned long PUMP_TIME = mlToMs(PUMP_PORTION);
+static const unsigned long IDLE_TIME = PUMP_TIME * 10;
+static const unsigned long WET_TIME = ONE_HOUR;
 
 void setup() {
   initializePins();
@@ -241,7 +240,7 @@ void manageWaterPump() {
       stopPump();
     }
   } else if (idleTimePassed()) {
-    if (maxMoisture < MAX_DRY_MOISTURE && !wetRecently()) {
+    if ((maxMoisture < MAX_DRY_MOISTURE) && !wetRecently()) {
       startPump();
     } else {
       resetMoisture();
