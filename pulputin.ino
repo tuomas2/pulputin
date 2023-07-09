@@ -18,7 +18,6 @@ static const int IN_MOISTURE2_PIN = A1;
 
 static const int OUT_PUMP_PIN = 2; // PWM possible
 
-
 static const int PUMP_PORTION = 10;       // ml
 static const int PUMP_WATER_SPEED = 133;  // ml per 100 seconds
 
@@ -27,11 +26,12 @@ static const int MIN_WET_MOISTURE = 5;  // percent
 
 int moisture1Percent = 0;
 int moisture2Percent = 0;
-int maxMoisture = 0; // During idle time
+int maxMoisture = 0; // Max value during whole idle time
 
-uint16_t pumpStatistics[24];  // How many ml water has been pumped each hour
+// How many ml water has been pumped each hour
 // Latest is first item.
 // Once an hour last item is removed and each item is moved one forward.
+uint16_t pumpStatistics[24]; 
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 
@@ -40,10 +40,12 @@ static const int EEPROM_PUMP_STATISTICS = 0;
 static const int EEPROM_CONFIGURED = 48;
 static const int EEPROM_LAST = 48;
 
+// Pumping speed if pump operating 
 static const int MILLILITRES_PER_MINUTE = 80;
 
 static const byte IS_CONFIGURED = 0b10101010;
 
+// Times, in millisecond (since starting device)
 unsigned long timeNow = 0;
 unsigned long lastHourStarted = 0;
 unsigned long pumpStartedMs = 0;
@@ -62,15 +64,6 @@ static const unsigned long ONE_HOUR = 3600000;
 static const unsigned long PUMP_TIME = mlToMs(PUMP_PORTION);
 static const unsigned long IDLE_TIME = PUMP_TIME * 10;
 static const unsigned long WET_TIME = ONE_HOUR;
-
-void setup() {
-  initializePins();
-  initializeStatistics();
-  lcd.init();
-  readInput();
-  updateLcd();
-  startPump();
-}
 
 void initializePins() {
   pinMode(BUTTON1_PIN, INPUT_PULLUP);
@@ -247,6 +240,14 @@ void manageWaterPump() {
       idleStartedMs = timeNow;
     }
   }
+}
+
+void setup() {
+  initializePins();
+  initializeStatistics();
+  lcd.init();
+  readInput();
+  startPump();
 }
 
 void loop() {
