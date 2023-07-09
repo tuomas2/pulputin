@@ -134,7 +134,7 @@ void updateLcd() {
     snprintf(lcdBuf1, SIZE, "Pump %d min ago            ", pumpLastStartedAgo);
     if(wasWet) {
       int wetLastAgo = (timeNow - lastWetMs) / 1000 / 60;
-      snprintf(lcdBuf2, SIZE, "Wet %d min              ", wetLastAgo);
+      snprintf(lcdBuf2, SIZE, "Wet %d min ago           ", wetLastAgo);
     } else {
       snprintf(lcdBuf2, SIZE, "Was not wet yet     ");
     }
@@ -225,7 +225,7 @@ bool idleTimePassed() {
 }
 
 bool wetRecently() {
-  return wasWet && timeNow - lastWetMs < WET_TIME;
+  return wasWet && (timeNow - lastWetMs < WET_TIME);
 }
 
 void manageWaterPump() {
