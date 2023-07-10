@@ -18,8 +18,8 @@ static const int IN_MOISTURE2_PIN = A1;
 
 static const int OUT_PUMP_PIN = 2; // PWM possible
 
-static const int PUMP_PORTION = 10;       // ml
-static const int PUMP_WATER_SPEED = 133;  // ml per 100 seconds
+static const int PUMP_PORTION = 10;       // Amount of water pumped at once (ml)
+static const int PUMP_WATER_SPEED = 133;  // Pump speed, ml per 100 seconds
 
 static const int MAX_DRY_MOISTURE = 5;  // percent
 static const int MIN_WET_MOISTURE = 5;  // percent
@@ -33,17 +33,12 @@ int maxMoisture = 0; // Max value during whole idle time
 // Once an hour last item is removed and each item is moved one forward.
 uint16_t pumpStatistics[24]; 
 
-LiquidCrystal_I2C lcd(0x3F, 16, 2);
-
 // EEPROM addresses
 static const int EEPROM_PUMP_STATISTICS = 0;
 static const int EEPROM_CONFIGURED = 48;
 static const int EEPROM_LAST = 48;
 
-// Pumping speed if pump operating 
-static const int MILLILITRES_PER_MINUTE = 80;
-
-static const byte IS_CONFIGURED = 0b10101010;
+static const byte EEPROM_CHECKVALUE = 0b10101010;
 
 // Times, in millisecond (since starting device)
 unsigned long timeNow = 0;
@@ -58,15 +53,15 @@ bool wasWet = false;
 bool pumpRunning = false;
 
 // Convert millilitres to milliseconds
-unsigned long mlToMs(int millilitres) {
-  return 100000 * millilitres / PUMP_WATER_SPEED;
-}
+unsigned long mlToMs(int millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
 
 static const unsigned long ONE_HOUR = 3600000;
 static const unsigned long PUMP_TIME = mlToMs(PUMP_PORTION);
 static const unsigned long IDLE_TIME = PUMP_TIME * 10;
 static const unsigned long WET_TIME = ONE_HOUR;
 static const unsigned long FORCE_STOP_TIME = ONE_HOUR*3;
+
+LiquidCrystal_I2C lcd(0x3F, 16, 2);
 
 void initializePins() {
   pinMode(BUTTON1_PIN, INPUT_PULLUP);
@@ -86,7 +81,7 @@ void initializePins() {
 }
 
 void initializeStatistics() {
-  if (eeprom_read_byte(EEPROM_CONFIGURED) != IS_CONFIGURED) {
+  if (eeprom_read_byte(EEPROM_CONFIGURED) != EEPROM_CHECKVALUE) {
     resetEEPROM();
   }
   for (int i = 0; i < 24; i++) {
@@ -112,7 +107,7 @@ void resetEEPROM() {
   for (int i = 0; i < EEPROM_LAST; i++) {
     eeprom_write_byte(i, 0);
   }
-  eeprom_write_byte(EEPROM_CONFIGURED, IS_CONFIGURED);
+  eeprom_write_byte(EEPROM_CONFIGURED, EEPROM_CHECKVALUE);
 }
 
 void updateLcd() {
@@ -162,14 +157,14 @@ bool backlightButtonPressed = false;
 bool backlightOn = false;
 
 void readInput() {
-  bool r = !digitalRead(BUTTON8_PIN);
-  if (r != resetButtonPressed && r) {
+  bool resetBtn = !digitalRead(BUTTON8_PIN);
+  if (resetBtn != resetButtonPressed && resetBtn) {
     resetEEPROM();
     initializeStatistics();
   }
-  resetButtonPressed = r;
-  bool b1 = !digitalRead(BUTTON3_PIN);
-  if (b1 != backlightButtonPressed && b1) {
+  resetButtonPressed = resetBtn;
+  bool backlightBtn = !digitalRead(BUTTON3_PIN);
+  if (backlightBtn != backlightButtonPressed && backlightBtn) {
     backlightOn = !backlightOn;
     if(backlightOn) {
       lcd.backlight(); 
@@ -177,22 +172,17 @@ void readInput() {
       lcd.noBacklight();
     }
   }
-  backlightButtonPressed = b1;
+  backlightButtonPressed = backlightBtn;
 
-  bool f = !digitalRead(BUTTON4_PIN);
-  if (f != forceStopPressed && f) {
+  bool forceBtn = !digitalRead(BUTTON4_PIN);
+  if (forceBtn != forceStopPressed && forceBtn) {
     forceStopStartedMs = timeNow;
     wasForceStopped = true;
   }
-  forceStopPressed = f;
+  forceStopPressed = forceBtn;
 
-
-
-  int moist1 = analogRead(IN_MOISTURE1_PIN);
-  int moist2 = analogRead(IN_MOISTURE2_PIN);
-
-  moisture1Percent = 100 - (int)((float)moist1 / 1023. * 100);
-  moisture2Percent = 100 - (int)((float)moist2 / 1023. * 100);
+  moisture1Percent = 100 - (int)((float)analogRead(IN_MOISTURE1_PIN)/ 1023. * 100);
+  moisture2Percent = 100 - (int)((float)analogRead(IN_MOISTURE2_PIN) / 1023. * 100);
 }
 
 void startPump() {
@@ -200,54 +190,37 @@ void startPump() {
   pumpStartedMs = timeNow;
   digitalWrite(OUT_PUMP_PIN, HIGH);
   digitalWrite(LED_BUILTIN, HIGH);
-
-  resetMoisture();
+  resetMaxMoisture();
 }
 
 void stopPump() {
   pumpRunning = false;
   digitalWrite(OUT_PUMP_PIN, LOW);
   digitalWrite(LED_BUILTIN, LOW);
-
   pumpStatistics[0] += PUMP_PORTION;
   savePumpStatistics();
   idleStartedMs = timeNow;
 }
 
 
-void updateMoisture() {
+void updateMaxMoisture() {
   if (moisture1Percent > maxMoisture) {
     maxMoisture = moisture1Percent;
   }
 }
 
-void resetMoisture() {
+void resetMaxMoisture() {
   maxMoisture = moisture1Percent;
 }
 
-bool stopPumpTimePassed() {
-  return timeNow - pumpStartedMs > PUMP_TIME;
-}
-
-bool idleTimePassed() {
-  return timeNow - idleStartedMs > IDLE_TIME;
-}
-
-bool wetRecently() {
-  return wasWet && (timeNow - lastWetMs < WET_TIME);
-}
-
-bool forceStoppedRecently() {
-  return wasForceStopped && (timeNow - forceStopStartedMs < FORCE_STOP_TIME);
-}
-
-bool cantStart() {
-  return wetRecently() || forceStoppedRecently();
-}
-
+bool stopPumpTimePassed() { return timeNow - pumpStartedMs > PUMP_TIME;}
+bool idleTimePassed() { return timeNow - idleStartedMs > IDLE_TIME; }
+bool wetRecently() { return wasWet && (timeNow - lastWetMs < WET_TIME); }
+bool forceStoppedRecently() { return wasForceStopped && (timeNow - forceStopStartedMs < FORCE_STOP_TIME); }
+bool cantStart() { return wetRecently() || forceStoppedRecently(); }
 
 void manageWaterPump() {
-  updateMoisture();
+  updateMaxMoisture();
 
   if (maxMoisture > MIN_WET_MOISTURE) {
     lastWetMs = timeNow;
@@ -262,7 +235,7 @@ void manageWaterPump() {
     if ((maxMoisture < MAX_DRY_MOISTURE) && !cantStart()) {
       startPump();
     } else {
-      resetMoisture();
+      resetMaxMoisture();
       idleStartedMs = timeNow;
     }
   }
