@@ -148,7 +148,7 @@ void updateLcd() {
     if (button1Pressed) {
       snprintf(lcdBuf2, LCD_BUF_SIZE, "m1: %d%% m2: %d%%            ", moisture1Percent, moisture2Percent);
     } else {
-      snprintf(lcdBuf2, LCD_BUF_SIZE, "%3d%% %3d%% %s             ", maxMoisture, moisture2Percent, cantStart() ? "X" : "");
+      snprintf(lcdBuf2, LCD_BUF_SIZE, "%3d%% %3d%% %s             ", maxMoisture, moisture2Percent, cantStart() ? "STOP" : "");
     }
   }
   lcd.setCursor(0, 0);
