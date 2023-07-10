@@ -54,6 +54,7 @@ bool pumpRunning = false;
 
 // Convert millilitres to milliseconds
 unsigned long mlToMs(int millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
+unsigned long minutesAgo(unsigned long timestamp) { return (timeNow - timestamp) / 1000 / 60; }
 
 static const unsigned long ONE_HOUR = 3600000;
 static const unsigned long PUMP_TIME = mlToMs(PUMP_PORTION);
@@ -118,31 +119,33 @@ void updateLcd() {
   bool showForceStop = !digitalRead(BUTTON4_PIN);
   bool showTimes = !digitalRead(BUTTON1_PIN);
   bool button1Pressed = !digitalRead(BUTTON2_PIN);
-
-  int pumpLastStartedAgo = (timeNow - pumpStartedMs) / 1000 / 60;
   
   if (showForceStop) {
     snprintf(lcdBuf1, SIZE, "Force stopping                 ");
     snprintf(lcdBuf2, SIZE, "for 3 hours                    ");
   }
   else if (showTimes) {  
-    snprintf(lcdBuf1, SIZE, "Pump %d min ago            ", pumpLastStartedAgo);
+    if(wasForceStopped) {
+      snprintf(lcdBuf1, SIZE, "FStop %d min ago            ", minutesAgo(forceStopStartedMs));
+    }
+    else {
+       snprintf(lcdBuf2, SIZE, "Was not FStopped     ");
+    }
     if(wasWet) {
-      int wetLastAgo = (timeNow - lastWetMs) / 1000 / 60;
-      snprintf(lcdBuf2, SIZE, "Wet %d min ago           ", wetLastAgo);
+      snprintf(lcdBuf2, SIZE, "Wet %d min ago           ", minutesAgo(lastWetMs));
     } else {
       snprintf(lcdBuf2, SIZE, "Was not wet yet     ");
     }
   } else {
-    int total = 0;
+    unsigned long total = 0;
     for (int i = 0; i < 24; i++) {
       total += pumpStatistics[i];
     }
-    snprintf(lcdBuf1, SIZE, "%d dl/d %d min           ", total/100, pumpLastStartedAgo);
+    snprintf(lcdBuf1, SIZE, "%3d dl/d %3d min           ", total/100, minutesAgo(pumpStartedMs));
     if (button1Pressed) {
       snprintf(lcdBuf2, SIZE, "m1: %d%% m2: %d%%            ", moisture1Percent, moisture2Percent);
     } else {
-      snprintf(lcdBuf2, SIZE, "%3d%% %3d%%              ", maxMoisture, moisture2Percent);
+      snprintf(lcdBuf2, SIZE, "%3d%% %3d%% %s             ", maxMoisture, moisture2Percent, cantStart() ? "X" : "");
     }
   }
   lcd.setCursor(0, 0);
