@@ -52,8 +52,10 @@ bool wasForceStopped = false;
 bool wasWet = false;
 bool pumpRunning = false;
 
-// Convert millilitres to milliseconds
+// Convert millilitres to milliseconds and vice versa
 unsigned long mlToMs(int millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
+unsigned long msToMl(int milliseconds) { return milliseconds * PUMP_WATER_SPEED / 100000; }
+
 unsigned long minutesAgo(unsigned long timestamp) { return (timeNow - timestamp) / 1000 / 60; }
 
 static const unsigned long ONE_HOUR = 3600000;
@@ -111,41 +113,42 @@ void resetEEPROM() {
   eeprom_write_byte(EEPROM_CONFIGURED, EEPROM_CHECKVALUE);
 }
 
-void updateLcd() {
-  static int SIZE = 20;
-  char lcdBuf1[SIZE];
-  char lcdBuf2[SIZE];
+static const int LCD_BUF_SIZE = 18;
+char lcdBuf1[LCD_BUF_SIZE];
+char lcdBuf2[LCD_BUF_SIZE];
 
+void updateLcd() {
   bool showForceStop = !digitalRead(BUTTON4_PIN);
   bool showTimes = !digitalRead(BUTTON1_PIN);
   bool button1Pressed = !digitalRead(BUTTON2_PIN);
   
   if (showForceStop) {
-    snprintf(lcdBuf1, SIZE, "Force stopping                 ");
-    snprintf(lcdBuf2, SIZE, "for 3 hours                    ");
+    snprintf(lcdBuf1, LCD_BUF_SIZE, "Force stopping                 ");
+    snprintf(lcdBuf2, LCD_BUF_SIZE, "for 3 hours                    ");
   }
   else if (showTimes) {  
     if(wasForceStopped) {
-      snprintf(lcdBuf1, SIZE, "FStop %3dmin ago        ", minutesAgo(forceStopStartedMs));
+      snprintf(lcdBuf1, LCD_BUF_SIZE, "FStop %3lumin ago        ", minutesAgo(forceStopStartedMs));
     }
     else {
-       snprintf(lcdBuf2, SIZE, "Was not FStopped     ");
+       snprintf(lcdBuf1, LCD_BUF_SIZE, "Was not FStopped     ");
     }
     if(wasWet) {
-      snprintf(lcdBuf2, SIZE, "Wet %3d min ago           ", minutesAgo(lastWetMs));
+      snprintf(lcdBuf2, LCD_BUF_SIZE, "Wet %3lu min ago           ", minutesAgo(lastWetMs));
     } else {
-      snprintf(lcdBuf2, SIZE, "Was not wet yet     ");
+      snprintf(lcdBuf2, LCD_BUF_SIZE, "Was not wet yet     ");
     }
   } else {
     unsigned long total = 0;
+    
     for (int i = 0; i < 24; i++) {
       total += pumpStatistics[i];
     }
-    snprintf(lcdBuf1, SIZE, "%3d dl/d %3d min           ", total/100, minutesAgo(pumpStartedMs));
+    snprintf(lcdBuf1, LCD_BUF_SIZE, "%3lu dl/d %3lu min           ", total/100, minutesAgo(pumpStartedMs));
     if (button1Pressed) {
-      snprintf(lcdBuf2, SIZE, "m1: %d%% m2: %d%%            ", moisture1Percent, moisture2Percent);
+      snprintf(lcdBuf2, LCD_BUF_SIZE, "m1: %d%% m2: %d%%            ", moisture1Percent, moisture2Percent);
     } else {
-      snprintf(lcdBuf2, SIZE, "%3d%% %3d%% %s             ", maxMoisture, moisture2Percent, cantStart() ? "X" : "");
+      snprintf(lcdBuf2, LCD_BUF_SIZE, "%3d%% %3d%% %s             ", maxMoisture, moisture2Percent, cantStart() ? "X" : "");
     }
   }
   lcd.setCursor(0, 0);
@@ -200,7 +203,7 @@ void stopPump() {
   pumpRunning = false;
   digitalWrite(OUT_PUMP_PIN, LOW);
   digitalWrite(LED_BUILTIN, LOW);
-  pumpStatistics[0] += PUMP_PORTION;
+  pumpStatistics[0] += msToMl(timeNow - pumpStartedMs);
   savePumpStatistics();
   idleStartedMs = timeNow;
 }
