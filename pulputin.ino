@@ -126,13 +126,13 @@ void updateLcd() {
   }
   else if (showTimes) {  
     if(wasForceStopped) {
-      snprintf(lcdBuf1, SIZE, "FStop %d min ago            ", minutesAgo(forceStopStartedMs));
+      snprintf(lcdBuf1, SIZE, "FStop %3dmin ago        ", minutesAgo(forceStopStartedMs));
     }
     else {
        snprintf(lcdBuf2, SIZE, "Was not FStopped     ");
     }
     if(wasWet) {
-      snprintf(lcdBuf2, SIZE, "Wet %d min ago           ", minutesAgo(lastWetMs));
+      snprintf(lcdBuf2, SIZE, "Wet %3d min ago           ", minutesAgo(lastWetMs));
     } else {
       snprintf(lcdBuf2, SIZE, "Was not wet yet     ");
     }
