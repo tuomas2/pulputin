@@ -51,7 +51,9 @@ unsigned long lastHourStarted = 0;
 unsigned long pumpStartedMs = 0;
 unsigned long idleStartedMs = 0;
 unsigned long lastWetMs = 0;
+unsigned long forceStopStartedMs = 0;
 
+bool wasForceStopped = false;
 bool wasWet = false;
 bool pumpRunning = false;
 
@@ -64,6 +66,7 @@ static const unsigned long ONE_HOUR = 3600000;
 static const unsigned long PUMP_TIME = mlToMs(PUMP_PORTION);
 static const unsigned long IDLE_TIME = PUMP_TIME * 10;
 static const unsigned long WET_TIME = ONE_HOUR;
+static const unsigned long FORCE_STOP_TIME = ONE_HOUR*3;
 
 void initializePins() {
   pinMode(BUTTON1_PIN, INPUT_PULLUP);
@@ -117,12 +120,17 @@ void updateLcd() {
   char lcdBuf1[SIZE];
   char lcdBuf2[SIZE];
 
+  bool showForceStop = !digitalRead(BUTTON4_PIN);
   bool showTimes = !digitalRead(BUTTON1_PIN);
   bool button1Pressed = !digitalRead(BUTTON2_PIN);
 
   int pumpLastStartedAgo = (timeNow - pumpStartedMs) / 1000 / 60;
   
-  if (showTimes) {  
+  if (showForceStop) {
+    snprintf(lcdBuf1, SIZE, "Force stopping                 ");
+    snprintf(lcdBuf2, SIZE, "for 3 hours                    ");
+  }
+  else if (showTimes) {  
     snprintf(lcdBuf1, SIZE, "Pump %d min ago            ", pumpLastStartedAgo);
     if(wasWet) {
       int wetLastAgo = (timeNow - lastWetMs) / 1000 / 60;
@@ -148,6 +156,7 @@ void updateLcd() {
   lcd.print(lcdBuf2);
 }
 
+bool forceStopPressed = false;
 bool resetButtonPressed = false;
 bool backlightButtonPressed = false;
 bool backlightOn = false;
@@ -169,6 +178,14 @@ void readInput() {
     }
   }
   backlightButtonPressed = b1;
+
+  bool f = !digitalRead(BUTTON4_PIN);
+  if (f != forceStopPressed && f) {
+    forceStopStartedMs = timeNow;
+    wasForceStopped = true;
+  }
+  forceStopPressed = f;
+
 
 
   int moist1 = analogRead(IN_MOISTURE1_PIN);
@@ -220,6 +237,15 @@ bool wetRecently() {
   return wasWet && (timeNow - lastWetMs < WET_TIME);
 }
 
+bool forceStoppedRecently() {
+  return wasForceStopped && (timeNow - forceStopStartedMs < FORCE_STOP_TIME);
+}
+
+bool cantStart() {
+  return wetRecently() || forceStoppedRecently();
+}
+
+
 void manageWaterPump() {
   updateMoisture();
 
@@ -229,11 +255,11 @@ void manageWaterPump() {
   }
 
   if (pumpRunning) {
-    if (stopPumpTimePassed() || wetRecently()) {
+    if (stopPumpTimePassed() || cantStart()) {
       stopPump();
     }
   } else if (idleTimePassed()) {
-    if ((maxMoisture < MAX_DRY_MOISTURE) && !wetRecently()) {
+    if ((maxMoisture < MAX_DRY_MOISTURE) && !cantStart()) {
       startPump();
     } else {
       resetMoisture();
