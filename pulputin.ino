@@ -51,19 +51,22 @@ unsigned long minutesAgo(unsigned long timestamp) { return (timeNow - timestamp)
 static const int PUMP_WATER_SPEED = 133;  // Pump speed, ml per 100 seconds
 
 // Convert millilitres to milliseconds and vice versa
-unsigned long mlToMs(int millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
-unsigned long msToMl(int milliseconds) { return milliseconds * PUMP_WATER_SPEED / 100000; }
+unsigned long mlToMs(unsigned long millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
+unsigned long msToMl(unsigned long milliseconds) { return milliseconds * PUMP_WATER_SPEED / 100000; }
 
 // Configuration
 static const int MAX_DRY_MOISTURE = 5;  // percent
 static const int MIN_WET_MOISTURE = 5;  // percent
 
 static const int PUMP_PORTION = 100;       // Amount of water pumped at once (ml)
+static const unsigned long PERIOD_TIME = 30*ONE_MINUTE; // Adjusted water amount is PUMP_PORTION / PERIOD_TIME.
+
 static const unsigned long ONE_HOUR = 3600000;
 static const unsigned long ONE_MINUTE = ONE_HOUR/60;
 
 static const unsigned long PUMP_TIME = mlToMs(PUMP_PORTION);
-static const unsigned long IDLE_TIME = PUMP_TIME * 9;
+static const unsigned long IDLE_TIME = PERIOD_TIME - PUMP_TIME;
+
 static const unsigned long WET_TIME = ONE_HOUR * 1;
 static const unsigned long FORCE_STOP_TIME = ONE_HOUR*3;
 
