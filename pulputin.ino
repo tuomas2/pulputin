@@ -64,7 +64,7 @@ static const unsigned long ONE_MINUTE = ONE_HOUR/60;
 static const int MAX_DRY_MOISTURE = 5;  // percent
 static const int MIN_WET_MOISTURE = 5;  // percent
 
-static const uint16_t STORAGE_SIZE = 25000;  // Amount of storage size in (ml)
+static const uint16_t CONTAINER_SIZE = 25000;  // Water container size in (ml)
 
 static const int PUMP_PORTION = 100;       // Amount of water pumped at once (ml)
 static const unsigned long PERIOD_TIME = 30*ONE_MINUTE; // Adjusted water amount is PUMP_PORTION / PERIOD_TIME.
@@ -138,7 +138,7 @@ void updateLcd() {
   bool showTimes = !digitalRead(BUTTON1_PIN);
   bool button1Pressed = !digitalRead(BUTTON2_PIN);
   bool showContainer = !digitalRead(BUTTON5_PIN);
-  unsigned long leftWater = (STORAGE_SIZE - pumpedTotal)/1000;
+  unsigned long leftWater = (CONTAINER_SIZE - pumpedTotal)/1000;
 
   if(showContainer) {
      snprintf(lcdBuf1, LCD_BUF_SIZE, "Pumped: %lu l        ", (unsigned long)pumpedTotal/1000);
