@@ -138,10 +138,11 @@ void updateLcd() {
   bool showTimes = !digitalRead(BUTTON1_PIN);
   bool button1Pressed = !digitalRead(BUTTON2_PIN);
   bool showContainer = !digitalRead(BUTTON5_PIN);
-  
+  unsigned long leftWater = (STORAGE_SIZE - pumpedTotal)/1000;
+
   if(showContainer) {
-     snprintf(lcdBuf2, LCD_BUF_SIZE, "Left: %lu l        ", (unsigned long)(STORAGE_SIZE - pumpedTotal)/1000);
      snprintf(lcdBuf1, LCD_BUF_SIZE, "Pumped: %lu l        ", (unsigned long)pumpedTotal/1000);
+     snprintf(lcdBuf2, LCD_BUF_SIZE, "Left: %lu l        ", leftWater);
   }
   else if (showForceStop) {
     snprintf(lcdBuf1, LCD_BUF_SIZE, "Force stopping                 ");
@@ -173,7 +174,7 @@ void updateLcd() {
     if (button1Pressed) {
       snprintf(lcdBuf2, LCD_BUF_SIZE, "m1: %d%% m2: %d%%            ", moisture1Percent, moisture2Percent);
     } else {
-      snprintf(lcdBuf2, LCD_BUF_SIZE, "%3d%% %3d%% %s             ", maxMoisture, moisture2Percent, cantStart() ? "STOP" : "");
+      snprintf(lcdBuf2, LCD_BUF_SIZE, "%3d%% %3d%% %s%s             ", maxMoisture, moisture2Percent, cantStart() ? "STOP" : "", leftWater < 5 ? "!!" : "");
     }
   }
   lcd.setCursor(0, 0);
