@@ -4,6 +4,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
 
+
 static const int BUTTON1_PIN = 39;
 static const int BUTTON2_PIN = 41;
 static const int BUTTON3_PIN = 43;
@@ -26,11 +27,13 @@ int maxMoisture = 0; // Max value during whole idle time
 // Latest is first item.
 // Once an hour last item is removed and each item is moved one forward.
 uint16_t pumpStatistics[24]; 
+uint16_t pumpedTotal = 0;
 
 // EEPROM addresses
 static const int EEPROM_PUMP_STATISTICS = 0;
 static const int EEPROM_CONFIGURED = 48;
-static const int EEPROM_LAST = 48;
+static const int EEPROM_PUMP_TOTAL = 49;
+static const int EEPROM_LAST = 50;
 
 static const byte EEPROM_CHECKVALUE = 0b10101010;
 
@@ -54,15 +57,18 @@ static const int PUMP_WATER_SPEED = 133;  // Pump speed, ml per 100 seconds
 unsigned long mlToMs(unsigned long millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
 unsigned long msToMl(unsigned long milliseconds) { return milliseconds * PUMP_WATER_SPEED / 100000; }
 
+static const unsigned long ONE_HOUR = 3600000;
+static const unsigned long ONE_MINUTE = ONE_HOUR/60;
+
 // Configuration
 static const int MAX_DRY_MOISTURE = 5;  // percent
 static const int MIN_WET_MOISTURE = 5;  // percent
 
+static const uint16_t STORAGE_SIZE = 25000;  // Amount of storage size in (ml)
+
 static const int PUMP_PORTION = 100;       // Amount of water pumped at once (ml)
 static const unsigned long PERIOD_TIME = 30*ONE_MINUTE; // Adjusted water amount is PUMP_PORTION / PERIOD_TIME.
 
-static const unsigned long ONE_HOUR = 3600000;
-static const unsigned long ONE_MINUTE = ONE_HOUR/60;
 
 static const unsigned long PUMP_TIME = mlToMs(PUMP_PORTION);
 static const unsigned long IDLE_TIME = PERIOD_TIME - PUMP_TIME;
@@ -96,12 +102,14 @@ void initializeStatistics() {
   for (int i = 0; i < 24; i++) {
     pumpStatistics[i] = eeprom_read_word(EEPROM_PUMP_STATISTICS + i*2);
   }
+  pumpedTotal = eeprom_read_word(EEPROM_PUMP_TOTAL);
 }
 
 void savePumpStatistics() {
   for (int i = 0; i < 24; i++) {
     eeprom_write_word(EEPROM_PUMP_STATISTICS + i*2, pumpStatistics[i]);
   }
+  eeprom_write_word(EEPROM_PUMP_TOTAL, pumpedTotal);
 }
 
 void hourPassed() {
@@ -125,12 +133,23 @@ char lcdBuf2[LCD_BUF_SIZE];
 
 void updateLcd() {
   bool showForceStop = !digitalRead(BUTTON4_PIN);
+  bool showResetContainer = !digitalRead(BUTTON6_PIN);
+
   bool showTimes = !digitalRead(BUTTON1_PIN);
   bool button1Pressed = !digitalRead(BUTTON2_PIN);
+  bool showContainer = !digitalRead(BUTTON5_PIN);
   
-  if (showForceStop) {
+  if(showContainer) {
+     snprintf(lcdBuf2, LCD_BUF_SIZE, "Left: %lu l        ", (unsigned long)(STORAGE_SIZE - pumpedTotal)/1000);
+     snprintf(lcdBuf1, LCD_BUF_SIZE, "Pumped: %lu l        ", (unsigned long)pumpedTotal/1000);
+  }
+  else if (showForceStop) {
     snprintf(lcdBuf1, LCD_BUF_SIZE, "Force stopping                 ");
     snprintf(lcdBuf2, LCD_BUF_SIZE, "for 3 hours                    ");
+  }
+  else if (showResetContainer) {
+    snprintf(lcdBuf1, LCD_BUF_SIZE, "Container                    ");
+    snprintf(lcdBuf2, LCD_BUF_SIZE, "filled                       ");
   }
   else if (showTimes) {  
     if(wasForceStopped) {
@@ -167,8 +186,17 @@ bool forceStopPressed = false;
 bool resetButtonPressed = false;
 bool backlightButtonPressed = false;
 bool backlightOn = false;
+bool resetContainerPressed = false;
 
 void readInput() {
+  bool containerBtn = !digitalRead(BUTTON6_PIN);
+
+  if(containerBtn != resetContainerPressed && containerBtn) {
+     pumpedTotal = 0;
+     savePumpStatistics();
+  }
+  resetContainerPressed = containerBtn;
+
   bool resetBtn = !digitalRead(BUTTON8_PIN);
   if (resetBtn != resetButtonPressed && resetBtn) {
     resetEEPROM();
@@ -209,7 +237,9 @@ void stopPump() {
   pumpRunning = false;
   digitalWrite(OUT_PUMP_PIN, LOW);
   digitalWrite(LED_BUILTIN, LOW);
-  pumpStatistics[0] += msToMl(timeNow - pumpStartedMs);
+  uint16_t pumped = msToMl(timeNow - pumpStartedMs);
+  pumpStatistics[0] += pumped; 
+  pumpedTotal += pumped;
   savePumpStatistics();
   idleStartedMs = timeNow;
 }
