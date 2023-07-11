@@ -18,12 +18,6 @@ static const int IN_MOISTURE2_PIN = A1;
 
 static const int OUT_PUMP_PIN = 2; // PWM possible
 
-static const int PUMP_PORTION = 10;       // Amount of water pumped at once (ml)
-static const int PUMP_WATER_SPEED = 133;  // Pump speed, ml per 100 seconds
-
-static const int MAX_DRY_MOISTURE = 5;  // percent
-static const int MIN_WET_MOISTURE = 5;  // percent
-
 int moisture1Percent = 0;
 int moisture2Percent = 0;
 int maxMoisture = 0; // Max value during whole idle time
@@ -52,18 +46,25 @@ bool wasForceStopped = false;
 bool wasWet = false;
 bool pumpRunning = false;
 
+unsigned long minutesAgo(unsigned long timestamp) { return (timeNow - timestamp) / 1000 / 60; }
+
+static const int PUMP_WATER_SPEED = 133;  // Pump speed, ml per 100 seconds
+
 // Convert millilitres to milliseconds and vice versa
 unsigned long mlToMs(int millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
 unsigned long msToMl(int milliseconds) { return milliseconds * PUMP_WATER_SPEED / 100000; }
 
-unsigned long minutesAgo(unsigned long timestamp) { return (timeNow - timestamp) / 1000 / 60; }
+// Configuration
+static const int MAX_DRY_MOISTURE = 5;  // percent
+static const int MIN_WET_MOISTURE = 5;  // percent
 
+static const int PUMP_PORTION = 100;       // Amount of water pumped at once (ml)
 static const unsigned long ONE_HOUR = 3600000;
-static const unsigned long ONE_MINUTE = 3600000/60;
+static const unsigned long ONE_MINUTE = ONE_HOUR/60;
 
 static const unsigned long PUMP_TIME = mlToMs(PUMP_PORTION);
-static const unsigned long IDLE_TIME = ONE_MINUTE * 5;
-static const unsigned long WET_TIME = ONE_HOUR;
+static const unsigned long IDLE_TIME = PUMP_TIME * 9;
+static const unsigned long WET_TIME = ONE_HOUR * 1;
 static const unsigned long FORCE_STOP_TIME = ONE_HOUR*3;
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
