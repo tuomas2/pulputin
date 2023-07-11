@@ -59,8 +59,10 @@ unsigned long msToMl(int milliseconds) { return milliseconds * PUMP_WATER_SPEED 
 unsigned long minutesAgo(unsigned long timestamp) { return (timeNow - timestamp) / 1000 / 60; }
 
 static const unsigned long ONE_HOUR = 3600000;
+static const unsigned long ONE_MINUTE = 3600000/60;
+
 static const unsigned long PUMP_TIME = mlToMs(PUMP_PORTION);
-static const unsigned long IDLE_TIME = PUMP_TIME * 10;
+static const unsigned long IDLE_TIME = ONE_MINUTE * 5;
 static const unsigned long WET_TIME = ONE_HOUR;
 static const unsigned long FORCE_STOP_TIME = ONE_HOUR*3;
 
