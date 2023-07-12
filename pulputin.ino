@@ -14,6 +14,9 @@ static const int BUTTON6_PIN = 49;
 static const int BUTTON7_PIN = 51;
 static const int BUTTON8_PIN = 53;
 
+static const int WATER_LEVEL_PIN_GROUND = 31;
+static const int WATER_LEVEL_PIN = 33;
+
 static const int IN_MOISTURE1_PIN = A0;
 static const int IN_MOISTURE2_PIN = A1;
 
@@ -21,7 +24,8 @@ static const int OUT_PUMP_PIN = 2; // PWM possible
 
 int moisture1Percent = 0;
 int moisture2Percent = 0;
-int maxMoisture = 0; // Max value during whole idle time
+bool waterLevel = false;
+bool maxWaterLevel = false; 
 
 // How many ml water has been pumped each hour
 // Latest is first item.
@@ -91,6 +95,10 @@ void initializePins() {
   pinMode(IN_MOISTURE2_PIN, INPUT);
   pinMode(OUT_PUMP_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(WATER_LEVEL_PIN_GROUND, OUTPUT);
+  digitalWrite(WATER_LEVEL_PIN_GROUND, LOW);
+  pinMode(WATER_LEVEL_PIN, INPUT_PULLUP);
+  
   digitalWrite(LED_BUILTIN, LOW);
   digitalWrite(OUT_PUMP_PIN, LOW);
 }
@@ -172,9 +180,9 @@ void updateLcd() {
     }
     snprintf(lcdBuf1, LCD_BUF_SIZE, "%3lu dl/d %3lu min           ", total/100, minutesAgo(pumpStartedMs));
     if (button1Pressed) {
-      snprintf(lcdBuf2, LCD_BUF_SIZE, "m1: %d%% m2: %d%%            ", moisture1Percent, moisture2Percent);
+      snprintf(lcdBuf2, LCD_BUF_SIZE, "%s %d%% %d%%            ", waterLevel ? "W" : " ", moisture1Percent, moisture2Percent);
     } else {
-      snprintf(lcdBuf2, LCD_BUF_SIZE, "%3d%% %3d%% %s%s             ", maxMoisture, moisture2Percent, cantStart() ? "STOP" : "", leftWater < 5 ? "!!" : "");
+      snprintf(lcdBuf2, LCD_BUF_SIZE, "%s %3d%% %3d%% %s%s             ", maxWaterLevel ? "W" : " ", moisture1Percent, moisture2Percent, cantStart() ? "STOP" : "", leftWater < 5 ? "!!" : "");
     }
   }
   lcd.setCursor(0, 0);
@@ -224,6 +232,7 @@ void readInput() {
 
   moisture1Percent = 100 - (int)((float)analogRead(IN_MOISTURE1_PIN)/ 1023. * 100);
   moisture2Percent = 100 - (int)((float)analogRead(IN_MOISTURE2_PIN) / 1023. * 100);
+  waterLevel = digitalRead(WATER_LEVEL_PIN);
 }
 
 void startPump() {
@@ -231,7 +240,7 @@ void startPump() {
   pumpStartedMs = timeNow;
   digitalWrite(OUT_PUMP_PIN, HIGH);
   digitalWrite(LED_BUILTIN, HIGH);
-  resetMaxMoisture();
+  resetMaxWaterLevel();
 }
 
 void stopPump() {
@@ -246,14 +255,14 @@ void stopPump() {
 }
 
 
-void updateMaxMoisture() {
-  if (moisture1Percent > maxMoisture) {
-    maxMoisture = moisture1Percent;
+void updateMaxWaterLevel() {
+  if (waterLevel) {
+    maxWaterLevel = true;
   }
 }
 
-void resetMaxMoisture() {
-  maxMoisture = moisture1Percent;
+void resetMaxWaterLevel() {
+  maxWaterLevel = waterLevel;
 }
 
 bool stopPumpTimePassed() { return timeNow - pumpStartedMs > PUMP_TIME;}
@@ -263,9 +272,9 @@ bool forceStoppedRecently() { return wasForceStopped && (timeNow - forceStopStar
 bool cantStart() { return wetRecently() || forceStoppedRecently(); }
 
 void manageWaterPump() {
-  updateMaxMoisture();
+  updateMaxWaterLevel();
 
-  if (maxMoisture > MIN_WET_MOISTURE) {
+  if (maxWaterLevel) {
     lastWetMs = timeNow;
     wasWet = true;
   }
@@ -275,10 +284,10 @@ void manageWaterPump() {
       stopPump();
     }
   } else if (idleTimePassed()) {
-    if ((maxMoisture < MAX_DRY_MOISTURE) && !cantStart()) {
+    if (!maxWaterLevel && !cantStart()) {
       startPump();
     } else {
-      resetMaxMoisture();
+      resetMaxWaterLevel();
       idleStartedMs = timeNow;
     }
   }
