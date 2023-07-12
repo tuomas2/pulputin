@@ -62,10 +62,6 @@ unsigned long msToMl(unsigned long milliseconds) { return milliseconds * PUMP_WA
 static const unsigned long ONE_HOUR = 3600000;
 static const unsigned long ONE_MINUTE = ONE_HOUR/60;
 
-// Configuration
-static const int MAX_DRY_MOISTURE = 5;  // percent
-static const int MIN_WET_MOISTURE = 5;  // percent
-
 static const uint16_t CONTAINER_SIZE = 25000;  // Water container size in (ml)
 
 static const int PUMP_PORTION = 100;       // Amount of water pumped at once (ml)
@@ -141,7 +137,6 @@ void updateLcd() {
   bool showResetContainer = !digitalRead(BUTTON6_PIN);
 
   bool showTimes = !digitalRead(BUTTON1_PIN);
-  bool button1Pressed = !digitalRead(BUTTON2_PIN);
   bool showContainer = !digitalRead(BUTTON5_PIN);
   unsigned long leftWater = (CONTAINER_SIZE - pumpedTotal)/1000;
 
@@ -176,11 +171,7 @@ void updateLcd() {
       total += pumpStatistics[i];
     }
     snprintf(lcdBuf1, LCD_BUF_SIZE, "%3lu dl/d %3lu min           ", total/100, minutesAgo(pumpStartedMs));
-    if (button1Pressed) {
-      snprintf(lcdBuf2, LCD_BUF_SIZE, "%s %d%%            ", waterLevel ? "W" : " ", moisture1Percent);
-    } else {
-      snprintf(lcdBuf2, LCD_BUF_SIZE, "%s %3d%% %s%s             ", maxWaterLevel ? "W" : " ", moisture1Percent, cantStart() ? "STOP" : "", leftWater < 5 ? "!!" : "");
-    }
+    snprintf(lcdBuf2, LCD_BUF_SIZE, "%s%s %3d%% %s%s             ", waterLevel ? "W" : "-", maxWaterLevel ? "W": "-", moisture1Percent, cantStart() ? "STOP" : "", leftWater < 5 ? "!!" : "");
   }
   lcd.setCursor(0, 0);
   lcd.print(lcdBuf1);
