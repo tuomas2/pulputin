@@ -171,7 +171,13 @@ void updateLcd() {
       total += pumpStatistics[i];
     }
     snprintf(lcdBuf1, LCD_BUF_SIZE, "%3lu dl/d %3lu min           ", total/100, minutesAgo(pumpStartedMs));
-    snprintf(lcdBuf2, LCD_BUF_SIZE, "%s%s %3d%% %s%s             ", waterLevel ? "W" : "-", maxWaterLevel ? "W": "-", moisture1Percent, cantStart() ? "STOP" : "", leftWater < 5 ? "!!" : "");
+    snprintf(lcdBuf2, LCD_BUF_SIZE, "%2d%% %s%s%s%s             ", 
+      moisture1Percent,
+      waterLevel ? "Wet" : "Dry", 
+      maxWaterLevel != waterLevel ? "*": " ", 
+      cantStart() ? "Stop" : "    ", 
+      leftWater < 5 ? "Fill" : "    "
+    );
   }
   lcd.setCursor(0, 0);
   lcd.print(lcdBuf1);
