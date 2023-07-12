@@ -18,12 +18,10 @@ static const int WATER_LEVEL_PIN_GROUND = 31;
 static const int WATER_LEVEL_PIN = 33;
 
 static const int IN_MOISTURE1_PIN = A0;
-static const int IN_MOISTURE2_PIN = A1;
 
 static const int OUT_PUMP_PIN = 2; // PWM possible
 
 int moisture1Percent = 0;
-int moisture2Percent = 0;
 bool waterLevel = false;
 bool maxWaterLevel = false; 
 
@@ -92,7 +90,6 @@ void initializePins() {
   pinMode(BUTTON7_PIN, INPUT_PULLUP);
   pinMode(BUTTON8_PIN, INPUT_PULLUP);
   pinMode(IN_MOISTURE1_PIN, INPUT);
-  pinMode(IN_MOISTURE2_PIN, INPUT);
   pinMode(OUT_PUMP_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(WATER_LEVEL_PIN_GROUND, OUTPUT);
@@ -180,9 +177,9 @@ void updateLcd() {
     }
     snprintf(lcdBuf1, LCD_BUF_SIZE, "%3lu dl/d %3lu min           ", total/100, minutesAgo(pumpStartedMs));
     if (button1Pressed) {
-      snprintf(lcdBuf2, LCD_BUF_SIZE, "%s %d%% %d%%            ", waterLevel ? "W" : " ", moisture1Percent, moisture2Percent);
+      snprintf(lcdBuf2, LCD_BUF_SIZE, "%s %d%%            ", waterLevel ? "W" : " ", moisture1Percent);
     } else {
-      snprintf(lcdBuf2, LCD_BUF_SIZE, "%s %3d%% %3d%% %s%s             ", maxWaterLevel ? "W" : " ", moisture1Percent, moisture2Percent, cantStart() ? "STOP" : "", leftWater < 5 ? "!!" : "");
+      snprintf(lcdBuf2, LCD_BUF_SIZE, "%s %3d%% %s%s             ", maxWaterLevel ? "W" : " ", moisture1Percent, cantStart() ? "STOP" : "", leftWater < 5 ? "!!" : "");
     }
   }
   lcd.setCursor(0, 0);
@@ -231,7 +228,6 @@ void readInput() {
   forceStopPressed = forceBtn;
 
   moisture1Percent = 100 - (int)((float)analogRead(IN_MOISTURE1_PIN)/ 1023. * 100);
-  moisture2Percent = 100 - (int)((float)analogRead(IN_MOISTURE2_PIN) / 1023. * 100);
   waterLevel = digitalRead(WATER_LEVEL_PIN);
 }
 
