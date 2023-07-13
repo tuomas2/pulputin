@@ -25,6 +25,11 @@ Sensor and pump
 
 ![30 litres water container](https://raw.githubusercontent.com/tuomas2/pulputin/master/pictures/water_container.jpg)
 
+Whole vine (it's still young, planted this summer)
+
+![Whole vine](https://raw.githubusercontent.com/tuomas2/pulputin/master/pictures/whole_vine.jpg)
+
+
 
 License
 --------
