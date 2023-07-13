@@ -21,6 +21,11 @@ Sensor and pump
 
 ![Sensor and pump](https://raw.githubusercontent.com/tuomas2/pulputin/master/pictures/sensor_and_pump.jpg)
 
+30 litres water container
+
+![30 litres water container](https://raw.githubusercontent.com/tuomas2/pulputin/master/pictures/water_container.jpg)
+
+
 License
 --------
 
