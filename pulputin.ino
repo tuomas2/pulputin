@@ -182,7 +182,7 @@ void updateLcd() {
       waterLevel ? "Wet" : "Dry", 
       maxWaterLevel != waterLevel ? "*": " ", 
       cantStart() ? "Stop" : "    ", 
-      leftWater < 5 ? "Fill" : "    "
+      leftWater < 5.0 ? "Fill" : "    "
     );
   }
   lcd.setCursor(0, 0);
