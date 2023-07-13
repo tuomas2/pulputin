@@ -176,7 +176,7 @@ void updateLcd() {
       total += pumpStatistics[i];
     }
     dtostrf((float)total/1000.0, 4, 1, floatBuf);
-    snprintf(lcdBuf1, BUF_SIZE, "%sl/d %3lumin           ", floatBuf, minutesAgo(pumpStartedMs));
+    snprintf(lcdBuf1, BUF_SIZE, "%s l/d %3lumin           ", floatBuf, minutesAgo(pumpStartedMs));
     snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s%s             ", 
       moisture1Percent,
       waterLevel ? "Wet" : "Dry", 
