@@ -139,10 +139,10 @@ void updateLcd() {
 
   bool showTimes = !digitalRead(BUTTON1_PIN);
   bool showContainer = !digitalRead(BUTTON5_PIN);
-  float leftWater = (CONTAINER_SIZE - pumpedTotal)/1000;
+  float leftWater = (CONTAINER_SIZE - pumpedTotal)/1000.0;
 
   if(showContainer) {
-    float pumpedTotalLitres = pumpedTotal / 1000;
+    float pumpedTotalLitres = pumpedTotal / 1000.0;
   
     dtostrf(pumpedTotalLitres, 0, 2, floatBuf);
     snprintf(lcdBuf1, BUF_SIZE, "Pumped: %s l        ", floatBuf);
@@ -175,7 +175,7 @@ void updateLcd() {
     for (int i = 0; i < 24; i++) {
       total += pumpStatistics[i];
     }
-    dtostrf((float)total/100, 4, 1, floatBuf);
+    dtostrf((float)total/100.0, 4, 1, floatBuf);
     snprintf(lcdBuf1, BUF_SIZE, "%sdl/d %3lumin           ", floatBuf, minutesAgo(pumpStartedMs));
     snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s%s             ", 
       moisture1Percent,
