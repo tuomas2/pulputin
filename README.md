@@ -1,7 +1,7 @@
 Pulputin
 --------
 
-Arduino project for automatized watering system.
+Arduino project that implements an automated watering system for my potted grape vine.
 
 Uses libs:
  - [LiquidCrystal I2C](https://github.com/johnrickman/LiquidCrystal_I2C) by Frank de Brabarder, version 1.1.2 from Arduino library 
