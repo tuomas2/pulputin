@@ -108,9 +108,9 @@ void initializeStatistics() {
 
 void savePumpStatistics() {
   for (int i = 0; i < 24; i++) {
-    eeprom_write_word(EEPROM_PUMP_STATISTICS + i*2, pumpStatistics[i]);
+    eeprom_update_word(EEPROM_PUMP_STATISTICS + i*2, pumpStatistics[i]);
   }
-  eeprom_write_word(EEPROM_PUMP_TOTAL, pumpedTotal);
+  eeprom_update_word(EEPROM_PUMP_TOTAL, pumpedTotal);
 }
 
 void hourPassed() {
@@ -123,9 +123,9 @@ void hourPassed() {
 
 void resetEEPROM() {
   for (int i = 0; i < EEPROM_LAST; i++) {
-    eeprom_write_byte(i, 0);
+    eeprom_update_byte(i, 0);
   }
-  eeprom_write_byte(EEPROM_CONFIGURED, EEPROM_CHECKVALUE);
+  eeprom_update_byte(EEPROM_CONFIGURED, EEPROM_CHECKVALUE);
 }
 
 static const int BUF_SIZE = 18;
