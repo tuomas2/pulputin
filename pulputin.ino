@@ -3,6 +3,7 @@
 
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
+#include <RTClib.h>
 
 static const int BUTTON1_PIN = 39;
 static const int BUTTON2_PIN = 41;
@@ -74,13 +75,8 @@ static const unsigned long IDLE_TIME = PERIOD_TIME - PUMP_TIME;
 static const unsigned long WET_TIME = ONE_HOUR * 1;
 static const unsigned long FORCE_STOP_TIME = ONE_HOUR*3;
 
-#include <Wire.h>
-#include <I2C_RTC.h>
-
-static DS3231 RTC;
-
-
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
+DS3231 rtc;
 
 void initializePins() {
   pinMode(BUTTON1_PIN, INPUT_PULLUP);
@@ -305,21 +301,20 @@ void manageWaterPump() {
   }
 }
 
+unsigned long offset = 1690000000;
+
 void setup() {
   Serial.begin(9600);
-  RTC.begin();
-  RTC.setHourMode(CLOCK_H24);
-  //RTC.setDate(24, 3, 1982);
-  //RTC.setTime(13, 15, 0);
-  if(!RTC.isRunning()) {
-    RTC.startClock();
+  Wire.begin();
+  rtc.begin();
+  
+  if (!rtc.isrunning()) {
+    Serial.println("RTC is NOT running!");
+    rtc.adjust(DateTime(__DATE__, __TIME__));
   }
 
-  // enable when RTC available
-  //epochAtStart = RTC.getEpoch() * 1000;
-  //Serial.println(epochAtStart);
-  timeNow = epochAtStart;
-
+  //epochAtStart = (rtc.now().unixtime() - offset) * 1000;
+  epochAtStart = 0;
   initializePins();
   initializeStatistics();
   lcd.init();
