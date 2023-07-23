@@ -4,7 +4,6 @@
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
 
-
 static const int BUTTON1_PIN = 39;
 static const int BUTTON2_PIN = 41;
 static const int BUTTON3_PIN = 43;
@@ -40,6 +39,7 @@ static const int EEPROM_LAST = 50;
 static const byte EEPROM_CHECKVALUE = 0b10101010;
 
 // Times, in millisecond (since starting device)
+unsigned long epochAtStart = 0;
 unsigned long timeNow = 0;
 unsigned long lastHourStarted = 0;
 unsigned long pumpStartedMs = 0;
@@ -73,6 +73,12 @@ static const unsigned long IDLE_TIME = PERIOD_TIME - PUMP_TIME;
 
 static const unsigned long WET_TIME = ONE_HOUR * 1;
 static const unsigned long FORCE_STOP_TIME = ONE_HOUR*3;
+
+#include <Wire.h>
+#include <I2C_RTC.h>
+
+static DS3231 RTC;
+
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 
@@ -300,6 +306,20 @@ void manageWaterPump() {
 }
 
 void setup() {
+  Serial.begin(9600);
+  RTC.begin();
+  RTC.setHourMode(CLOCK_H24);
+  //RTC.setDate(24, 3, 1982);
+  //RTC.setTime(13, 15, 0);
+  if(!RTC.isRunning()) {
+    RTC.startClock();
+  }
+
+  // enable when RTC available
+  //epochAtStart = RTC.getEpoch() * 1000;
+  //Serial.println(epochAtStart);
+  timeNow = epochAtStart;
+
   initializePins();
   initializeStatistics();
   lcd.init();
@@ -308,7 +328,7 @@ void setup() {
 }
 
 void loop() {
-  timeNow = millis();
+  timeNow = epochAtStart + millis();
   if (timeNow - lastHourStarted > ONE_HOUR) {
     hourPassed();
     lastHourStarted = timeNow;
