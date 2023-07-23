@@ -131,7 +131,8 @@ void resetEEPROM() {
 static const int BUF_SIZE = 18;
 char lcdBuf1[BUF_SIZE];
 char lcdBuf2[BUF_SIZE];
-char floatBuf[BUF_SIZE];
+char floatBuf1[BUF_SIZE];
+char floatBuf2[BUF_SIZE];
 
 void updateLcd() {
   bool showForceStop = !digitalRead(BUTTON4_PIN);
@@ -144,10 +145,10 @@ void updateLcd() {
   if(showContainer) {
     float pumpedTotalLitres = pumpedTotal / 1000.0;
   
-    dtostrf(pumpedTotalLitres, 0, 2, floatBuf);
-    snprintf(lcdBuf1, BUF_SIZE, "Pumped: %s l        ", floatBuf);
-    dtostrf(leftWater, 0, 2, floatBuf);
-    snprintf(lcdBuf2, BUF_SIZE, "Left: %s l        ", floatBuf);
+    dtostrf(pumpedTotalLitres, 0, 2, floatBuf1);
+    snprintf(lcdBuf1, BUF_SIZE, "Pumped: %s l        ", floatBuf1);
+    dtostrf(leftWater, 0, 2, floatBuf1);
+    snprintf(lcdBuf2, BUF_SIZE, "Left: %s l        ", floatBuf1);
   }
   else if (showForceStop) {
     snprintf(lcdBuf1, BUF_SIZE, "Force stopping                 ");
@@ -159,7 +160,7 @@ void updateLcd() {
   }
   else if (showTimes) {  
     if(wasForceStopped) {
-      snprintf(lcdBuf1, BUF_SIZE, "FStop %3lumin ago        ", minutesAgo(forceStopStartedMs));
+      snprintf(lcdBuf1, BUF_SIZE, "FStop %3lu min ago        ", minutesAgo(forceStopStartedMs));
     }
     else {
        snprintf(lcdBuf1, BUF_SIZE, "Was not FStopped     ");
@@ -175,10 +176,16 @@ void updateLcd() {
     for (int i = 0; i < 24; i++) {
       total += pumpStatistics[i];
     }
-    dtostrf((float)total/1000.0, 4, 1, floatBuf);
-    snprintf(lcdBuf1, BUF_SIZE, "%s l/d %3lumin           ", floatBuf, minutesAgo(pumpStartedMs));
-    snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s%s             ", 
-      moisture1Percent,
+    dtostrf((float)total/1000.0, 4, 1, floatBuf1);
+    
+    long totalMinutes = minutesAgo(pumpStartedMs);
+    long hours = totalMinutes/60;
+    long minutesLeft = totalMinutes - hours*60;
+
+    dtostrf(  total/1000.0, 4, 1, floatBuf1);
+
+    snprintf(lcdBuf1, BUF_SIZE, "%s l/d %luh %lum         ", floatBuf1, hours, minutesLeft);
+    snprintf(lcdBuf2, BUF_SIZE, "%s%s%s%s             ", 
       waterLevel ? "Wet" : "Dry", 
       maxWaterLevel != waterLevel ? "*": " ", 
       cantStart() ? "Stop" : "    ", 
