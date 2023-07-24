@@ -354,7 +354,7 @@ void loop() {
   timeNow = epochAtStart + millis();
   dateTimeNow.setunixtime((timeNow / 1000) + EPOCH_OFFSET);
 
-  if (timeNow - lastHourStarted > ONE_HOUR) {
+  if (timeNow - lastHourStarted > ONE_HOUR && !pumpRunning) {
     hourPassed();
     
     long correction = rtc.now().unixtime() - dateTimeNow.unixtime();
