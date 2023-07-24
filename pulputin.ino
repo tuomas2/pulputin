@@ -278,6 +278,7 @@ void startPump() {
   digitalWrite(OUT_PUMP_PIN, HIGH);
   digitalWrite(LED_BUILTIN, HIGH);
   resetMaxWaterLevel();
+  saveEeprom();
 }
 
 void stopPump() {
@@ -287,8 +288,8 @@ void stopPump() {
   uint16_t pumped = msToMl(timeNow - pumpStartedMs);
   pumpStatistics[0] += pumped; 
   pumpedTotal += pumped;
-  saveEeprom();
   idleStartedMs = timeNow;
+  saveEeprom();
 }
 
 
@@ -355,8 +356,8 @@ void loop() {
 
   if (timeNow - lastHourStarted > ONE_HOUR) {
     hourPassed();
-    saveEeprom();
     lastHourStarted = timeNow;
+    saveEeprom();
   }
   readInput();
   manageWaterPump();
