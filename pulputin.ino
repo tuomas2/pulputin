@@ -44,7 +44,7 @@ static const int EEPROM_LAST = 71;
 
 static const byte EEPROM_CHECKVALUE = 0b10101010;
 
-static const unsigned long EPOCH_OFFSET = 1690000000;
+static const unsigned long EPOCH_OFFSET = 1690180000;
 
 // Times, in millisecond (since starting device)
 unsigned long epochAtStart = 0;
