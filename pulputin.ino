@@ -35,13 +35,22 @@ uint16_t pumpedTotal = 0;
 static const int EEPROM_PUMP_STATISTICS = 0;
 static const int EEPROM_CONFIGURED = 48;
 static const int EEPROM_PUMP_TOTAL = 49;
-static const int EEPROM_LAST = 50;
+static const int EEPROM_LAST_HOUR_STARTED = 51;
+static const int EEPROM_PUMP_STARTED = 55;
+static const int EEPROM_IDLE_STARTED = 59;
+static const int EEPROM_LAST_WET = 63;
+static const int EEPROM_FORCE_STOP = 67;
+static const int EEPROM_LAST = 71;
 
 static const byte EEPROM_CHECKVALUE = 0b10101010;
+
+static const unsigned long EPOCH_OFFSET = 1690000000;
 
 // Times, in millisecond (since starting device)
 unsigned long epochAtStart = 0;
 unsigned long timeNow = 0;
+DateTime dateTimeNow;
+
 unsigned long lastHourStarted = 0;
 unsigned long pumpStartedMs = 0;
 unsigned long idleStartedMs = 0;
@@ -98,21 +107,32 @@ void initializePins() {
   digitalWrite(OUT_PUMP_PIN, LOW);
 }
 
-void initializeStatistics() {
+void readEeprom() {
   if (eeprom_read_byte(EEPROM_CONFIGURED) != EEPROM_CHECKVALUE) {
     resetEEPROM();
   }
   for (int i = 0; i < 24; i++) {
     pumpStatistics[i] = eeprom_read_word(EEPROM_PUMP_STATISTICS + i*2);
   }
+  
   pumpedTotal = eeprom_read_word(EEPROM_PUMP_TOTAL);
+  lastHourStarted = eeprom_read_dword(EEPROM_LAST_HOUR_STARTED);
+  pumpStartedMs = eeprom_read_dword(EEPROM_PUMP_STARTED);
+  idleStartedMs = eeprom_read_dword(EEPROM_IDLE_STARTED);
+  lastWetMs = eeprom_read_dword(EEPROM_LAST_WET);
+  forceStopStartedMs = eeprom_read_dword(EEPROM_FORCE_STOP); 
 }
 
-void savePumpStatistics() {
+void saveEeprom() {
   for (int i = 0; i < 24; i++) {
     eeprom_update_word(EEPROM_PUMP_STATISTICS + i*2, pumpStatistics[i]);
   }
   eeprom_update_word(EEPROM_PUMP_TOTAL, pumpedTotal);
+  eeprom_update_dword(EEPROM_LAST_HOUR_STARTED, lastHourStarted);
+  eeprom_update_dword(EEPROM_PUMP_STARTED, pumpStartedMs);
+  eeprom_update_dword(EEPROM_IDLE_STARTED, idleStartedMs);
+  eeprom_update_dword(EEPROM_LAST_WET, lastWetMs);
+  eeprom_update_dword(EEPROM_FORCE_STOP, forceStopStartedMs);
 }
 
 void hourPassed() {
@@ -120,14 +140,22 @@ void hourPassed() {
     pumpStatistics[i] = pumpStatistics[i - 1];
   }
   pumpStatistics[0] = 0;
-  savePumpStatistics();
+  saveEeprom();
 }
 
 void resetEEPROM() {
-  for (int i = 0; i < EEPROM_LAST; i++) {
-    eeprom_update_byte(i, 0);
+  for (int i = 23; i >= 0; i--) {
+    pumpStatistics[i] = 0;
   }
+  pumpedTotal = 0;
+  lastHourStarted = timeNow;
+  pumpStartedMs = timeNow;
+  idleStartedMs = timeNow;
+  lastWetMs = 0;
+  forceStopStartedMs = 0;
   eeprom_update_byte(EEPROM_CONFIGURED, EEPROM_CHECKVALUE);
+  saveEeprom();
+  //readEeprom();
 }
 
 static const int BUF_SIZE = 18;
@@ -187,12 +215,14 @@ void updateLcd() {
     dtostrf(  total/1000.0, 4, 1, floatBuf1);
 
     snprintf(lcdBuf1, BUF_SIZE, "%s l/d %luh %lum         ", floatBuf1, hours, minutesLeft);
-    snprintf(lcdBuf2, BUF_SIZE, "%s%s%s%s             ", 
+    snprintf(lcdBuf2, BUF_SIZE, "%s%s%s%s %d:%d           ", 
       waterLevel ? "Wet" : "Dry", 
       maxWaterLevel != waterLevel ? "*": " ", 
-      cantStart() ? "Stop" : "    ", 
-      leftWater < 5.0 ? "Fill" : "    "
-    );
+      cantStart() ? "Sto" : "   ", 
+      leftWater < 5.0 ? "Fil" : "   ",
+      dateTimeNow.hour(),
+      dateTimeNow.minute()
+);
   }
   lcd.setCursor(0, 0);
   lcd.print(lcdBuf1);
@@ -211,14 +241,14 @@ void readInput() {
 
   if(containerBtn != resetContainerPressed && containerBtn) {
      pumpedTotal = 0;
-     savePumpStatistics();
+     saveEeprom();
   }
   resetContainerPressed = containerBtn;
 
   bool resetBtn = !digitalRead(BUTTON8_PIN);
   if (resetBtn != resetButtonPressed && resetBtn) {
     resetEEPROM();
-    initializeStatistics();
+    readEeprom();
   }
   resetButtonPressed = resetBtn;
   bool backlightBtn = !digitalRead(BUTTON3_PIN);
@@ -258,7 +288,7 @@ void stopPump() {
   uint16_t pumped = msToMl(timeNow - pumpStartedMs);
   pumpStatistics[0] += pumped; 
   pumpedTotal += pumped;
-  savePumpStatistics();
+  saveEeprom();
   idleStartedMs = timeNow;
 }
 
@@ -301,29 +331,28 @@ void manageWaterPump() {
   }
 }
 
-unsigned long offset = 1690000000;
-
 void setup() {
   Serial.begin(9600);
   Wire.begin();
   rtc.begin();
-  
+
   if (!rtc.isrunning()) {
     Serial.println("RTC is NOT running!");
     rtc.adjust(DateTime(__DATE__, __TIME__));
   }
 
-  //epochAtStart = (rtc.now().unixtime() - offset) * 1000;
-  epochAtStart = 0;
+  dateTimeNow = rtc.now(); 
+  epochAtStart = (dateTimeNow.unixtime() - EPOCH_OFFSET) * 1000;
+  
   initializePins();
-  initializeStatistics();
+  readEeprom();
   lcd.init();
-  readInput();
-  startPump();
 }
 
 void loop() {
   timeNow = epochAtStart + millis();
+  dateTimeNow.setunixtime((timeNow / 1000) + EPOCH_OFFSET);
+
   if (timeNow - lastHourStarted > ONE_HOUR) {
     hourPassed();
     lastHourStarted = timeNow;
