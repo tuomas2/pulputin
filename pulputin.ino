@@ -356,6 +356,11 @@ void loop() {
 
   if (timeNow - lastHourStarted > ONE_HOUR) {
     hourPassed();
+    
+    long correction = rtc.now().unixtime() - dateTimeNow.unixtime();
+    epochAtStart += correction * 1000;
+    timeNow = epochAtStart + millis();
+
     lastHourStarted = timeNow;
     saveEeprom();
   }
