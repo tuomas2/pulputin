@@ -339,7 +339,8 @@ void setup() {
     Serial.println("RTC is NOT running!");
     rtc.adjust(DateTime(__DATE__, __TIME__));
   }
-
+  //rtc.adjust(DateTime(__DATE__, __TIME__));
+  
   dateTimeNow = rtc.now(); 
   epochAtStart = (dateTimeNow.unixtime() - EPOCH_OFFSET) * 1000;
   
