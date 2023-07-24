@@ -140,7 +140,6 @@ void hourPassed() {
     pumpStatistics[i] = pumpStatistics[i - 1];
   }
   pumpStatistics[0] = 0;
-  saveEeprom();
 }
 
 void resetEEPROM() {
@@ -355,6 +354,7 @@ void loop() {
 
   if (timeNow - lastHourStarted > ONE_HOUR) {
     hourPassed();
+    saveEeprom();
     lastHourStarted = timeNow;
   }
   readInput();
