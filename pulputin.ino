@@ -81,8 +81,8 @@ static const unsigned long PERIOD_TIME = 15*ONE_MINUTE; // Adjusted water amount
 static const unsigned long PUMP_TIME = mlToMs(PUMP_PORTION);
 static const unsigned long IDLE_TIME = PERIOD_TIME - PUMP_TIME;
 
-static const unsigned long WET_TIME = ONE_HOUR * 1;
-static const unsigned long FORCE_STOP_TIME = ONE_HOUR*3;
+static const unsigned long WET_TIME = ONE_HOUR;
+static const unsigned long FORCE_STOP_TIME = ONE_HOUR;
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 DS3231 rtc;
@@ -181,7 +181,7 @@ void updateLcd() {
   }
   else if (showForceStop) {
     snprintf(lcdBuf1, BUF_SIZE, "Force stopping                 ");
-    snprintf(lcdBuf2, BUF_SIZE, "for 3 hours                    ");
+    snprintf(lcdBuf2, BUF_SIZE, "for 1 hour                     ");
   }
   else if (showResetContainer) {
     snprintf(lcdBuf1, BUF_SIZE, "Container                    ");
