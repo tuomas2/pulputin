@@ -40,7 +40,8 @@ static const int EEPROM_PUMP_STARTED = 55;
 static const int EEPROM_IDLE_STARTED = 59;
 static const int EEPROM_LAST_WET = 63;
 static const int EEPROM_FORCE_STOP = 67;
-static const int EEPROM_LAST = 71;
+static const int EEPROM_STATS_CUR_DAY = 72;
+static const int EEPROM_LAST = 72;
 
 static const byte EEPROM_CHECKVALUE = 0b10101010;
 
@@ -56,6 +57,7 @@ unsigned long pumpStartedMs = 0;
 unsigned long idleStartedMs = 0;
 unsigned long lastWetMs = 0;
 unsigned long forceStopStartedMs = 0;
+uint8_t statisticsCurrentDay = 0;
 
 bool wasForceStopped = false;
 bool wasWet = false;
@@ -120,7 +122,8 @@ void readEeprom() {
   pumpStartedMs = eeprom_read_dword(EEPROM_PUMP_STARTED);
   idleStartedMs = eeprom_read_dword(EEPROM_IDLE_STARTED);
   lastWetMs = eeprom_read_dword(EEPROM_LAST_WET);
-  forceStopStartedMs = eeprom_read_dword(EEPROM_FORCE_STOP); 
+  forceStopStartedMs = eeprom_read_dword(EEPROM_FORCE_STOP);
+  statisticsCurrentDay = eeprom_read_byte(EEPROM_STATS_CUR_DAY); 
 }
 
 void saveEeprom() {
@@ -133,9 +136,11 @@ void saveEeprom() {
   eeprom_update_dword(EEPROM_IDLE_STARTED, idleStartedMs);
   eeprom_update_dword(EEPROM_LAST_WET, lastWetMs);
   eeprom_update_dword(EEPROM_FORCE_STOP, forceStopStartedMs);
+  eeprom_update_byte(EEPROM_STATS_CUR_DAY, statisticsCurrentDay);
 }
 
-void hourPassed() {
+
+void dayPassed() {
   for (int i = 23; i > 0; i--) {
     pumpStatistics[i] = pumpStatistics[i - 1];
   }
@@ -152,6 +157,7 @@ void resetEEPROM() {
   idleStartedMs = timeNow;
   lastWetMs = 0;
   forceStopStartedMs = 0;
+  statisticsCurrentDay = dateTimeNow.day();
   eeprom_update_byte(EEPROM_CONFIGURED, EEPROM_CHECKVALUE);
   saveEeprom();
   //readEeprom();
@@ -200,20 +206,14 @@ void updateLcd() {
       snprintf(lcdBuf2, BUF_SIZE, "Was not wet yet     ");
     }
   } else {
-    unsigned long total = 0;
-    
-    for (int i = 0; i < 24; i++) {
-      total += pumpStatistics[i];
-    }
-    dtostrf((float)total/1000.0, 4, 1, floatBuf1);
+    dtostrf((float)(pumpStatistics[0]/1000.0), 4, 1, floatBuf1);
+    dtostrf((float)(pumpStatistics[1]/1000.0), 4, 1, floatBuf2);
     
     long totalMinutes = minutesAgo(pumpStartedMs);
     long hours = totalMinutes/60;
     long minutesLeft = totalMinutes - hours*60;
-
-    dtostrf(  total/1000.0, 4, 1, floatBuf1);
-
-    snprintf(lcdBuf1, BUF_SIZE, "%s l/d %luh %lum         ", floatBuf1, hours, minutesLeft);
+  
+    snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);
     snprintf(lcdBuf2, BUF_SIZE, "%s%s%s%s %d:%d           ", 
       waterLevel ? "Wet" : "Dry", 
       maxWaterLevel != waterLevel ? "*": " ", 
@@ -354,9 +354,13 @@ void loop() {
   timeNow = epochAtStart + millis();
   dateTimeNow.setunixtime((timeNow / 1000) + EPOCH_OFFSET);
 
-  if (timeNow - lastHourStarted > ONE_HOUR && !pumpRunning) {
-    hourPassed();
-    
+  if(dateTimeNow.day() != statisticsCurrentDay) {
+    dayPassed();
+    statisticsCurrentDay = dateTimeNow.day();
+    saveEeprom();
+  }
+
+  if (timeNow - lastHourStarted > ONE_HOUR && !pumpRunning) {    
     long correction = rtc.now().unixtime() - dateTimeNow.unixtime();
     epochAtStart += correction * 1000;
     timeNow = epochAtStart + millis();
