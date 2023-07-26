@@ -20,6 +20,7 @@ static const int WATER_LEVEL_PIN = 33;
 static const int IN_MOISTURE1_PIN = A0;
 
 static const int OUT_PUMP_PIN = 2; // PWM possible
+static const int ALARM_PIN = 3;
 
 int moisture1Percent = 0;
 bool waterLevel = false;
@@ -101,11 +102,14 @@ void initializePins() {
   pinMode(IN_MOISTURE1_PIN, INPUT);
   pinMode(OUT_PUMP_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(ALARM_PIN, OUTPUT);
+
   pinMode(WATER_LEVEL_PIN_GROUND, OUTPUT);
   digitalWrite(WATER_LEVEL_PIN_GROUND, LOW);
   pinMode(WATER_LEVEL_PIN, INPUT_PULLUP);
   
   digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(ALARM_PIN, LOW);
   digitalWrite(OUT_PUMP_PIN, LOW);
 }
 
@@ -223,6 +227,13 @@ void updateLcd() {
       dateTimeNow.minute()
 );
   }
+
+  if(leftWater < 5.0 && timeNow/100 % 100 == 0) {
+    analogWrite(ALARM_PIN, 50);
+  } else {
+    analogWrite(ALARM_PIN, 0);
+  }
+  
   lcd.setCursor(0, 0);
   lcd.print(lcdBuf1);
   lcd.setCursor(0, 1);
