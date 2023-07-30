@@ -342,6 +342,12 @@ void manageWaterPump() {
   }
 }
 
+void printStats() {
+  for(int i = 0; i<24; i++) {
+    Serial.println(pumpStatistics[i]);
+  }
+}
+
 void setup() {
   Serial.begin(9600);
   Wire.begin();
@@ -358,6 +364,7 @@ void setup() {
   
   initializePins();
   readEeprom();
+  printStats();
   lcd.init();
 }
 
