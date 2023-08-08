@@ -75,7 +75,7 @@ unsigned long msToMl(unsigned long milliseconds) { return milliseconds * PUMP_WA
 static const unsigned long ONE_HOUR = 3600000;
 static const unsigned long ONE_MINUTE = ONE_HOUR/60;
 
-static const uint16_t CONTAINER_SIZE = 30000;  // Water container size in (ml)
+static const uint16_t CONTAINER_SIZE = 28000;  // Water container size in (ml)
 
 static const int PUMP_PORTION = 100;       // Amount of water pumped at once (ml)
 static const unsigned long PERIOD_TIME = 15*ONE_MINUTE; // Adjusted water amount is PUMP_PORTION / PERIOD_TIME.
