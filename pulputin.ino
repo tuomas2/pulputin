@@ -22,14 +22,9 @@ static const int IN_MOISTURE1_PIN = A0;
 static const int OUT_PUMP_PIN = 2; // PWM possible
 static const int ALARM_PIN = 3;
 
-static const int MOTION_PIN = 29;
-
-
 int moisture1Percent = 0;
 bool waterLevel = false;
 bool maxWaterLevel = false; 
-bool motionSns = false;
-
 
 // How many ml water has been pumped each hour
 // Latest is first item.
@@ -63,11 +58,8 @@ unsigned long pumpStartedMs = 0;
 unsigned long idleStartedMs = 0;
 unsigned long lastWetMs = 0;
 unsigned long forceStopStartedMs = 0;
-unsigned long motionStopStartedMs = 0;
-
 uint8_t statisticsCurrentDay = 0;
 
-bool wasMotionStopped = false;
 bool wasForceStopped = false;
 bool wasWet = false;
 bool pumpRunning = false;
@@ -94,8 +86,6 @@ static const unsigned long IDLE_TIME = PERIOD_TIME - PUMP_TIME;
 
 static const unsigned long WET_TIME = ONE_HOUR;
 static const unsigned long FORCE_STOP_TIME = ONE_HOUR;
-static const unsigned long MOTION_STOP_TIME = ONE_HOUR/4;
-
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 DS3231 rtc;
@@ -109,8 +99,6 @@ void initializePins() {
   pinMode(BUTTON6_PIN, INPUT_PULLUP);
   pinMode(BUTTON7_PIN, INPUT_PULLUP);
   pinMode(BUTTON8_PIN, INPUT_PULLUP);
-  pinMode(MOTION_PIN, INPUT);
-
   pinMode(IN_MOISTURE1_PIN, INPUT);
   pinMode(OUT_PUMP_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
@@ -216,10 +204,10 @@ void updateLcd() {
     else {
        snprintf(lcdBuf1, BUF_SIZE, "Was not FStopped     ");
     }
-    if(wasMotionStopped) {
-      snprintf(lcdBuf2, BUF_SIZE, "MStop %3lu min ago           ", minutesAgo(motionStopStartedMs));
+    if(wasWet) {
+      snprintf(lcdBuf2, BUF_SIZE, "Wet %3lu min ago           ", minutesAgo(lastWetMs));
     } else {
-      snprintf(lcdBuf2, BUF_SIZE, "Was not MStopped     ");
+      snprintf(lcdBuf2, BUF_SIZE, "Was not wet yet     ");
     }
   } else {
     dtostrf((float)(pumpStatistics[0]/1000.0), 4, 1, floatBuf1);
@@ -231,10 +219,10 @@ void updateLcd() {
   
     snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);
     snprintf(lcdBuf2, BUF_SIZE, "%s%s%s%s %d:%d           ", 
-      waterLevel ? "Wet" : "Dry",
+      waterLevel ? "Wet" : "Dry", 
       maxWaterLevel != waterLevel ? "*": " ", 
       cantStart() ? "Sto" : "   ", 
-      motionSns ? "Mot": "---",
+      leftWater < 5.0 ? "Fil" : "   ",
       dateTimeNow.hour(),
       dateTimeNow.minute()
 );
@@ -290,11 +278,6 @@ void readInput() {
     wasForceStopped = true;
   }
   forceStopPressed = forceBtn;
-  motionSns = digitalRead(MOTION_PIN);
-  if(motionSns) {
-    motionStopStartedMs = timeNow;
-    wasMotionStopped = true;
-  }
 
   moisture1Percent = 100 - (int)((float)analogRead(IN_MOISTURE1_PIN)/ 1023. * 100);
   waterLevel = digitalRead(WATER_LEVEL_PIN);
@@ -335,9 +318,7 @@ bool stopPumpTimePassed() { return timeNow - pumpStartedMs > PUMP_TIME;}
 bool idleTimePassed() { return timeNow - idleStartedMs > IDLE_TIME; }
 bool wetRecently() { return wasWet && (timeNow - lastWetMs < WET_TIME); }
 bool forceStoppedRecently() { return wasForceStopped && (timeNow - forceStopStartedMs < FORCE_STOP_TIME); }
-bool motionStoppedRecently() { return wasMotionStopped && (timeNow - motionStopStartedMs < MOTION_STOP_TIME); }
-
-bool cantStart() { return wetRecently() || forceStoppedRecently() || motionStoppedRecently(); }
+bool cantStart() { return wetRecently() || forceStoppedRecently(); }
 
 void manageWaterPump() {
   updateMaxWaterLevel();
