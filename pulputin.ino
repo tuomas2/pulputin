@@ -22,7 +22,7 @@ static const int IN_MOISTURE1_PIN = A0;
 static const int OUT_PUMP_PIN = 2; // PWM possible
 static const int ALARM_PIN = 3;
 
-static const int MOTION_PIN = 29;
+static const int MOTION_PIN = BUTTON2_PIN;
 
 
 int moisture1Percent = 0;
@@ -45,7 +45,7 @@ static const int EEPROM_LAST_HOUR_STARTED = 51;
 static const int EEPROM_PUMP_STARTED = 55;
 static const int EEPROM_IDLE_STARTED = 59;
 static const int EEPROM_LAST_WET = 63;
-static const int EEPROM_FORCE_STOP = 67;
+static const int EEPROM_UNUSED1 = 67;
 static const int EEPROM_STATS_CUR_DAY = 72;
 static const int EEPROM_LAST = 72;
 
@@ -109,7 +109,7 @@ void initializePins() {
   pinMode(BUTTON6_PIN, INPUT_PULLUP);
   pinMode(BUTTON7_PIN, INPUT_PULLUP);
   pinMode(BUTTON8_PIN, INPUT_PULLUP);
-  pinMode(MOTION_PIN, INPUT);
+  //pinMode(MOTION_PIN, INPUT);
 
   pinMode(IN_MOISTURE1_PIN, INPUT);
   pinMode(OUT_PUMP_PIN, OUTPUT);
@@ -138,7 +138,6 @@ void readEeprom() {
   pumpStartedMs = eeprom_read_dword(EEPROM_PUMP_STARTED);
   idleStartedMs = eeprom_read_dword(EEPROM_IDLE_STARTED);
   lastWetMs = eeprom_read_dword(EEPROM_LAST_WET);
-  forceStopStartedMs = eeprom_read_dword(EEPROM_FORCE_STOP);
   statisticsCurrentDay = eeprom_read_byte(EEPROM_STATS_CUR_DAY); 
 }
 
@@ -151,7 +150,6 @@ void saveEeprom() {
   eeprom_update_dword(EEPROM_PUMP_STARTED, pumpStartedMs);
   eeprom_update_dword(EEPROM_IDLE_STARTED, idleStartedMs);
   eeprom_update_dword(EEPROM_LAST_WET, lastWetMs);
-  eeprom_update_dword(EEPROM_FORCE_STOP, forceStopStartedMs);
   eeprom_update_byte(EEPROM_STATS_CUR_DAY, statisticsCurrentDay);
 }
 
@@ -290,7 +288,7 @@ void readInput() {
     wasForceStopped = true;
   }
   forceStopPressed = forceBtn;
-  motionSns = digitalRead(MOTION_PIN);
+  motionSns = !digitalRead(MOTION_PIN);
   if(motionSns) {
     motionStopStartedMs = timeNow;
     wasMotionStopped = true;
