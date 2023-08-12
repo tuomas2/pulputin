@@ -22,7 +22,8 @@ static const int IN_MOISTURE1_PIN = A0;
 static const int OUT_PUMP_PIN = 2; // PWM possible
 static const int ALARM_PIN = 3;
 
-static const int MOTION_PIN = BUTTON2_PIN;
+static const int MOTION_PIN = 52;
+static const int MOTION_GROUND_PIN = 50;
 
 
 int moisture1Percent = 0;
@@ -109,7 +110,7 @@ void initializePins() {
   pinMode(BUTTON6_PIN, INPUT_PULLUP);
   pinMode(BUTTON7_PIN, INPUT_PULLUP);
   pinMode(BUTTON8_PIN, INPUT_PULLUP);
-  //pinMode(MOTION_PIN, INPUT);
+  pinMode(MOTION_PIN, INPUT);
 
   pinMode(IN_MOISTURE1_PIN, INPUT);
   pinMode(OUT_PUMP_PIN, OUTPUT);
@@ -118,6 +119,9 @@ void initializePins() {
 
   pinMode(WATER_LEVEL_PIN_GROUND, OUTPUT);
   digitalWrite(WATER_LEVEL_PIN_GROUND, LOW);
+  pinMode(MOTION_GROUND_PIN, OUTPUT);
+  digitalWrite(MOTION_GROUND_PIN, LOW);
+
   pinMode(WATER_LEVEL_PIN, INPUT_PULLUP);
   
   digitalWrite(LED_BUILTIN, LOW);
@@ -288,7 +292,7 @@ void readInput() {
     wasForceStopped = true;
   }
   forceStopPressed = forceBtn;
-  motionSns = !digitalRead(MOTION_PIN);
+  motionSns = digitalRead(MOTION_PIN);
   if(motionSns) {
     motionStopStartedMs = timeNow;
     wasMotionStopped = true;
