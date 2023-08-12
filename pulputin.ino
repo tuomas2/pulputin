@@ -95,7 +95,7 @@ static const unsigned long IDLE_TIME = PERIOD_TIME - PUMP_TIME;
 
 static const unsigned long WET_TIME = ONE_HOUR;
 static const unsigned long FORCE_STOP_TIME = ONE_HOUR;
-static const unsigned long MOTION_STOP_TIME = ONE_HOUR/4;
+static const unsigned long MOTION_STOP_TIME = ONE_MINUTE * 5;
 
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
