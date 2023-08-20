@@ -230,13 +230,13 @@ void updateLcd() {
     long totalMinutes = minutesAgo(pumpStartedMs);
     long hours = totalMinutes/60;
     long minutesLeft = totalMinutes - hours*60;
-  
+    int waterRemainingPercent = ((float)(CONTAINER_SIZE - pumpedTotal) / CONTAINER_SIZE)*100;
     snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);
-    snprintf(lcdBuf2, BUF_SIZE, "%s%s%s%s %d:%d           ", 
-      waterLevel ? "Wet" : "Dry",
-      maxWaterLevel != waterLevel ? "*": " ", 
-      cantStart() ? "Sto" : "   ", 
-      motionSns ? "Mot": "---",
+    snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s %2d:%2d           ", 
+      waterRemainingPercent,
+      waterLevel ? "We" : "Dr",
+      cantStart() ? "St" : "  ", 
+      motionSns ? "Mo": "  ",
       dateTimeNow.hour(),
       dateTimeNow.minute()
 );
