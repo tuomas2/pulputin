@@ -235,8 +235,8 @@ void updateLcd() {
     snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s %2d:%2d           ", 
       waterRemainingPercent,
       waterLevel ? "We" : "Dr",
-      cantStart() ? "St" : "  ", 
       motionSns ? "Mo": "  ",
+      cantStart() ? "St" : "  ", 
       dateTimeNow.hour(),
       dateTimeNow.minute()
 );
