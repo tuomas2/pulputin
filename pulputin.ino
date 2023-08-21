@@ -242,7 +242,7 @@ void updateLcd() {
 );
   }
 
-  if(leftWater < 5.0 && timeNow/100 % 100 == 0 && !forceStoppedRecently()) {
+  if(leftWater < 3.0 && timeNow/100 % 100 == 0 && !forceStoppedRecently()) {
     analogWrite(ALARM_PIN, 50);
   } else {
     analogWrite(ALARM_PIN, 0);
