@@ -190,7 +190,7 @@ char floatBuf2[BUF_SIZE];
 void updateLcd() {
   bool showForceStop = !digitalRead(BUTTON4_PIN);
   bool showResetContainer = !digitalRead(BUTTON6_PIN);
-
+  bool backlightBtn = !digitalRead(BUTTON3_PIN);
   bool showTimes = !digitalRead(BUTTON1_PIN);
   bool showContainer = !digitalRead(BUTTON5_PIN);
   float leftWater = (CONTAINER_SIZE - pumpedTotal)/1000.0;
@@ -242,7 +242,7 @@ void updateLcd() {
 );
   }
 
-  if(leftWater < 3.0 && timeNow/100 % 100 == 0 && !forceStoppedRecently()) {
+  if(backlightBtn || (leftWater < 3.0 && timeNow/100 % 100 == 0 && !forceStoppedRecently())) {
     analogWrite(ALARM_PIN, 50);
   } else {
     analogWrite(ALARM_PIN, 0);
