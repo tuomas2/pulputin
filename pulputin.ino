@@ -14,8 +14,7 @@ static const int BUTTON6_PIN = 49;
 static const int BUTTON7_PIN = 51;
 static const int BUTTON8_PIN = 53;
 
-static const int WATER_LEVEL_PIN_GROUND = 31;
-static const int WATER_LEVEL_PIN = 33;
+static const int WATER_LEVEL_PIN = 48;
 
 static const int IN_MOISTURE1_PIN = A0;
 
@@ -117,8 +116,6 @@ void initializePins() {
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(ALARM_PIN, OUTPUT);
 
-  pinMode(WATER_LEVEL_PIN_GROUND, OUTPUT);
-  digitalWrite(WATER_LEVEL_PIN_GROUND, LOW);
   pinMode(MOTION_GROUND_PIN, OUTPUT);
   digitalWrite(MOTION_GROUND_PIN, LOW);
 
