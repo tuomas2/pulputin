@@ -209,22 +209,13 @@ void updateLcd() {
     snprintf(lcdBuf2, BUF_SIZE, "filled                       ");
   }
   else if (showTimes) {  
-    if(wasForceStopped) {
-      snprintf(lcdBuf1, BUF_SIZE, "FStop %3lu min ago        ", minutesAgo(forceStopStartedMs));
-    }
-    else {
-       snprintf(lcdBuf1, BUF_SIZE, "Was not FStopped     ");
-    }
-    if(wasMotionStopped) {
-      snprintf(lcdBuf2, BUF_SIZE, "MStop %3lu min ago           ", minutesAgo(motionStopStartedMs));
-    } else {
-      snprintf(lcdBuf2, BUF_SIZE, "Was not MStopped     ");
-    }
+    snprintf(lcdBuf1, BUF_SIZE, "Wet %lu min ago        ", minutesAgo(lastWetMs));
+    snprintf(lcdBuf2, BUF_SIZE, "Pumped %lu min ago        ", minutesAgo(pumpStartedMs));
   } else {
     dtostrf((float)(pumpStatistics[0]/1000.0), 4, 1, floatBuf1);
     dtostrf((float)(pumpStatistics[1]/1000.0), 4, 1, floatBuf2);
     
-    long totalMinutes = minutesAgo(pumpStartedMs);
+    long totalMinutes = minutesAgo(waterLevel ? pumpStartedMs: lastWetMs);
     long hours = totalMinutes/60;
     long minutesLeft = totalMinutes - hours*60;
     int waterRemainingPercent = ((float)(CONTAINER_SIZE - pumpedTotal) / CONTAINER_SIZE)*100;
