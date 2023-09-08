@@ -74,7 +74,7 @@ bool pumpRunning = false;
 
 unsigned long minutesAgo(unsigned long timestamp) { return (timeNow - timestamp) / 1000 / 60; }
 
-static const int PUMP_WATER_SPEED = 133;  // Pump speed, ml per 100 seconds
+static const int PUMP_WATER_SPEED = 111;  // Pump speed, ml per 100 seconds
 
 // Convert millilitres to milliseconds and vice versa
 unsigned long mlToMs(unsigned long millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
