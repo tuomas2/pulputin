@@ -51,7 +51,7 @@ static const int EEPROM_LAST = 72;
 
 static const byte EEPROM_CHECKVALUE = 0b10101010;
 
-static const unsigned long EPOCH_OFFSET = 1690180000;
+static const unsigned long EPOCH_OFFSET = 1694490000;
 
 // Times, in millisecond (since starting device)
 unsigned long epochAtStart = 0;
@@ -220,14 +220,13 @@ void updateLcd() {
     long minutesLeft = totalMinutes - hours*60;
     int waterRemainingPercent = ((float)(CONTAINER_SIZE - pumpedTotal) / CONTAINER_SIZE)*100;
     snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);
-    snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s %2d:%02d           ", 
+    snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s %2u:%02u           ", 
       waterRemainingPercent,
       waterLevel ? "We" : "Dr",
       motionSns ? "Mo": "  ",
       cantStart() ? "St" : "  ", 
-      dateTimeNow.hour(),
-      dateTimeNow.minute()
-);
+      dateTimeNow.hour(), dateTimeNow.minute()
+    );
   }
 
   if(backlightBtn || (leftWater < 3.0 && timeNow/100 % 100 == 0 && !forceStoppedRecently())) {
@@ -366,9 +365,16 @@ void setup() {
     Serial.println("RTC is NOT running!");
     rtc.adjust(DateTime(__DATE__, __TIME__));
   }
+  //Serial.println(__TIME__);
   //rtc.adjust(DateTime(__DATE__, __TIME__));
   
-  dateTimeNow = rtc.now(); 
+  dateTimeNow = rtc.now();
+  
+  dateTimeNow.tostr(lcdBuf1); 
+  Serial.println(lcdBuf1);
+  Serial.println(dateTimeNow.hour());
+  Serial.println(dateTimeNow.minute());
+  
   epochAtStart = (dateTimeNow.unixtime() - EPOCH_OFFSET) * 1000;
   
   initializePins();
