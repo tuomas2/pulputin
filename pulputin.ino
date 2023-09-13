@@ -43,28 +43,27 @@ static const uint16_t EEPROM_PUMP_STATISTICS = 0;
 static const uint16_t EEPROM_CONFIGURED = 48;
 static const uint16_t EEPROM_PUMP_TOTAL = 49;
 static const uint16_t EEPROM_LAST_HOUR_STARTED = 51;
-static const uint16_t EEPROM_PUMP_STARTED = 55;
-static const uint16_t EEPROM_IDLE_STARTED = 59;
-static const uint16_t EEPROM_LAST_WET = 63;
-static const uint16_t EEPROM_UNUSED1 = 67;
-static const uint16_t EEPROM_STATS_CUR_DAY = 72;
-static const uint16_t EEPROM_LAST = 72;
+static const uint16_t EEPROM_PUMP_STARTED = 59;
+static const uint16_t EEPROM_IDLE_STARTED = 67;
+static const uint16_t EEPROM_LAST_WET = 75;
+static const uint16_t EEPROM_STATS_CUR_DAY = 83;
+static const uint16_t EEPROM_LAST = 83;
 
 static const byte EEPROM_CHECKVALUE = 0b10101010;
 
 static const uint32_t EPOCH_OFFSET = 1694490000;
 
 // Times, in millisecond (since starting device)
-uint32_t epochAtStart = 0;
-uint32_t timeNow = 0;
+uint64_t epochAtStart = 0;
+uint64_t timeNow = 0;
 DateTime dateTimeNow;
 
-uint32_t lastHourStarted = 0;
-uint32_t pumpStartedMs = 0;
-uint32_t idleStartedMs = 0;
-uint32_t lastWetMs = 0;
-uint32_t forceStopStartedMs = 0;
-uint32_t motionStopStartedMs = 0;
+uint64_t lastHourStarted = 0;
+uint64_t pumpStartedMs = 0;
+uint64_t idleStartedMs = 0;
+uint64_t lastWetMs = 0;
+uint64_t forceStopStartedMs = 0;
+uint64_t motionStopStartedMs = 0;
 
 uint8_t statisticsCurrentDay = 0;
 
@@ -73,13 +72,13 @@ bool wasForceStopped = false;
 bool wasWet = false;
 bool pumpRunning = false;
 
-uint32_t minutesAgo(uint32_t timestamp) { return (timeNow - timestamp) / 1000 / 60; }
+uint16_t minutesAgo(uint64_t timestamp) { return (timeNow - timestamp) / 1000 / 60; }
 
 static const uint16_t PUMP_WATER_SPEED = 116;  // Pump speed, ml per 100 seconds
 
 // Convert millilitres to milliseconds and vice versa
-uint32_t mlToMs(uint32_t millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
-uint32_t msToMl(uint32_t milliseconds) { return milliseconds * PUMP_WATER_SPEED / 100000; }
+uint64_t mlToMs(uint32_t millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
+uint32_t msToMl(uint64_t milliseconds) { return milliseconds * PUMP_WATER_SPEED / 100000; }
 
 static const uint32_t ONE_HOUR = 3600000;
 static const uint32_t ONE_MINUTE = ONE_HOUR/60;
@@ -136,10 +135,12 @@ void readEeprom() {
   }
   
   pumpedTotal = eeprom_read_word(EEPROM_PUMP_TOTAL);
-  lastHourStarted = eeprom_read_dword(EEPROM_LAST_HOUR_STARTED);
-  pumpStartedMs = eeprom_read_dword(EEPROM_PUMP_STARTED);
-  idleStartedMs = eeprom_read_dword(EEPROM_IDLE_STARTED);
-  lastWetMs = eeprom_read_dword(EEPROM_LAST_WET);
+
+  eeprom_read_block(&lastHourStarted, EEPROM_LAST_HOUR_STARTED, 8);
+  eeprom_read_block(&pumpStartedMs, EEPROM_PUMP_STARTED, 8); 
+  eeprom_read_block(&idleStartedMs, EEPROM_IDLE_STARTED, 8); 
+  eeprom_read_block(&lastWetMs, EEPROM_LAST_WET, 8); 
+ 
   statisticsCurrentDay = eeprom_read_byte(EEPROM_STATS_CUR_DAY); 
 }
 
@@ -148,10 +149,12 @@ void saveEeprom() {
     eeprom_update_word(EEPROM_PUMP_STATISTICS + i*2, pumpStatistics[i]);
   }
   eeprom_update_word(EEPROM_PUMP_TOTAL, pumpedTotal);
-  eeprom_update_dword(EEPROM_LAST_HOUR_STARTED, lastHourStarted);
-  eeprom_update_dword(EEPROM_PUMP_STARTED, pumpStartedMs);
-  eeprom_update_dword(EEPROM_IDLE_STARTED, idleStartedMs);
-  eeprom_update_dword(EEPROM_LAST_WET, lastWetMs);
+  
+  eeprom_update_block(&lastHourStarted, EEPROM_LAST_HOUR_STARTED, 8);
+  eeprom_update_block(&pumpStartedMs, EEPROM_PUMP_STARTED, 8);
+  eeprom_update_block(&idleStartedMs, EEPROM_IDLE_STARTED, 8);
+  eeprom_update_block(&lastWetMs, EEPROM_LAST_WET, 8);
+
   eeprom_update_byte(EEPROM_STATS_CUR_DAY, statisticsCurrentDay);
 }
 
@@ -376,7 +379,7 @@ void setup() {
   Serial.println(dateTimeNow.hour());
   Serial.println(dateTimeNow.minute());
   
-  epochAtStart = (dateTimeNow.unixtime() - EPOCH_OFFSET) * 1000;
+  epochAtStart = (uint64_t)(dateTimeNow.unixtime() - EPOCH_OFFSET) * 1000;
   
   initializePins();
   readEeprom();
