@@ -96,7 +96,6 @@ static const uint32_t WET_TIME = ONE_HOUR;
 static const uint32_t FORCE_STOP_TIME = ONE_HOUR;
 static const uint32_t MOTION_STOP_TIME = ONE_MINUTE * 15;
 
-
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 DS3231 rtc;
 
@@ -160,16 +159,17 @@ void saveEeprom() {
 
 
 void dayPassed() {
-  for (uint16_t i = 23; i > 0; i--) {
+  for (int16_t i = 23; i > 0; i--) {
     pumpStatistics[i] = pumpStatistics[i - 1];
   }
   pumpStatistics[0] = 0;
 }
 
 void resetEEPROM() {
-  for (uint16_t i = 23; i >= 0; i--) {
+  for (int16_t i = 23; i >= 0; i--) {
     pumpStatistics[i] = 0;
   }
+
   pumpedTotal = 0;
   lastHourStarted = timeNow;
   pumpStartedMs = timeNow;
@@ -213,8 +213,8 @@ void updateLcd() {
     snprintf(lcdBuf2, BUF_SIZE, "filled                       ");
   }
   else if (showTimes) {  
-    snprintf(lcdBuf1, BUF_SIZE, "Wet %lu min ago        ", minutesAgo(lastWetMs));
-    snprintf(lcdBuf2, BUF_SIZE, "Pumped %lu min ago        ", minutesAgo(pumpStartedMs));
+    snprintf(lcdBuf1, BUF_SIZE, "Wet %u min ago        ", minutesAgo(lastWetMs));
+    snprintf(lcdBuf2, BUF_SIZE, "Pumped %u min ago        ", minutesAgo(pumpStartedMs));
   } else {
     dtostrf((float)(pumpStatistics[0]/1000.0), 4, 1, floatBuf1);
     dtostrf((float)(pumpStatistics[1]/1000.0), 4, 1, floatBuf2);
@@ -222,7 +222,7 @@ void updateLcd() {
     int32_t totalMinutes = minutesAgo(waterLevel ? pumpStartedMs: lastWetMs);
     int32_t hours = totalMinutes/60;
     int32_t minutesLeft = totalMinutes - hours*60;
-    uint16_t waterRemainingPercent = ((float)(CONTAINER_SIZE - pumpedTotal) / CONTAINER_SIZE)*100;
+    uint16_t waterRemainingPercent = ((float)(CONTAINER_SIZE - pumpedTotal - 1) / CONTAINER_SIZE)*100;
     snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);
     snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s %2u:%02u           ", 
       waterRemainingPercent,
