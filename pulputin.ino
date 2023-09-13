@@ -5,27 +5,28 @@
 #include <EEPROM.h>
 #include <RTClib.h>
 
-static const int BUTTON1_PIN = 39;
-static const int BUTTON2_PIN = 41;
-static const int BUTTON3_PIN = 43;
-static const int BUTTON4_PIN = 45;
-static const int BUTTON5_PIN = 47;
-static const int BUTTON6_PIN = 49;
-static const int BUTTON7_PIN = 51;
-static const int BUTTON8_PIN = 53;
 
-static const int WATER_LEVEL_PIN = 48;
+static const uint16_t BUTTON1_PIN = 39;
+static const uint16_t BUTTON2_PIN = 41;
+static const uint16_t BUTTON3_PIN = 43;
+static const uint16_t BUTTON4_PIN = 45;
+static const uint16_t BUTTON5_PIN = 47;
+static const uint16_t BUTTON6_PIN = 49;
+static const uint16_t BUTTON7_PIN = 51;
+static const uint16_t BUTTON8_PIN = 53;
 
-static const int IN_MOISTURE1_PIN = A0;
+static const uint16_t WATER_LEVEL_PIN = 48;
 
-static const int OUT_PUMP_PIN = 2; // PWM possible
-static const int ALARM_PIN = 3;
+static const uint16_t IN_MOISTURE1_PIN = A0;
 
-static const int MOTION_PIN = 52;
-static const int MOTION_GROUND_PIN = 50;
+static const uint16_t OUT_PUMP_PIN = 2; // PWM possible
+static const uint16_t ALARM_PIN = 3;
+
+static const uint16_t MOTION_PIN = 52;
+static const uint16_t MOTION_GROUND_PIN = 50;
 
 
-int moisture1Percent = 0;
+uint16_t moisture1Percent = 0;
 bool waterLevel = false;
 bool maxWaterLevel = false; 
 bool motionSns = false;
@@ -38,32 +39,32 @@ uint16_t pumpStatistics[24];
 uint16_t pumpedTotal = 0;
 
 // EEPROM addresses
-static const int EEPROM_PUMP_STATISTICS = 0;
-static const int EEPROM_CONFIGURED = 48;
-static const int EEPROM_PUMP_TOTAL = 49;
-static const int EEPROM_LAST_HOUR_STARTED = 51;
-static const int EEPROM_PUMP_STARTED = 55;
-static const int EEPROM_IDLE_STARTED = 59;
-static const int EEPROM_LAST_WET = 63;
-static const int EEPROM_UNUSED1 = 67;
-static const int EEPROM_STATS_CUR_DAY = 72;
-static const int EEPROM_LAST = 72;
+static const uint16_t EEPROM_PUMP_STATISTICS = 0;
+static const uint16_t EEPROM_CONFIGURED = 48;
+static const uint16_t EEPROM_PUMP_TOTAL = 49;
+static const uint16_t EEPROM_LAST_HOUR_STARTED = 51;
+static const uint16_t EEPROM_PUMP_STARTED = 55;
+static const uint16_t EEPROM_IDLE_STARTED = 59;
+static const uint16_t EEPROM_LAST_WET = 63;
+static const uint16_t EEPROM_UNUSED1 = 67;
+static const uint16_t EEPROM_STATS_CUR_DAY = 72;
+static const uint16_t EEPROM_LAST = 72;
 
 static const byte EEPROM_CHECKVALUE = 0b10101010;
 
-static const unsigned long EPOCH_OFFSET = 1694490000;
+static const uint32_t EPOCH_OFFSET = 1694490000;
 
 // Times, in millisecond (since starting device)
-unsigned long epochAtStart = 0;
-unsigned long timeNow = 0;
+uint32_t epochAtStart = 0;
+uint32_t timeNow = 0;
 DateTime dateTimeNow;
 
-unsigned long lastHourStarted = 0;
-unsigned long pumpStartedMs = 0;
-unsigned long idleStartedMs = 0;
-unsigned long lastWetMs = 0;
-unsigned long forceStopStartedMs = 0;
-unsigned long motionStopStartedMs = 0;
+uint32_t lastHourStarted = 0;
+uint32_t pumpStartedMs = 0;
+uint32_t idleStartedMs = 0;
+uint32_t lastWetMs = 0;
+uint32_t forceStopStartedMs = 0;
+uint32_t motionStopStartedMs = 0;
 
 uint8_t statisticsCurrentDay = 0;
 
@@ -72,29 +73,29 @@ bool wasForceStopped = false;
 bool wasWet = false;
 bool pumpRunning = false;
 
-unsigned long minutesAgo(unsigned long timestamp) { return (timeNow - timestamp) / 1000 / 60; }
+uint32_t minutesAgo(uint32_t timestamp) { return (timeNow - timestamp) / 1000 / 60; }
 
-static const int PUMP_WATER_SPEED = 116;  // Pump speed, ml per 100 seconds
+static const uint16_t PUMP_WATER_SPEED = 116;  // Pump speed, ml per 100 seconds
 
 // Convert millilitres to milliseconds and vice versa
-unsigned long mlToMs(unsigned long millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
-unsigned long msToMl(unsigned long milliseconds) { return milliseconds * PUMP_WATER_SPEED / 100000; }
+uint32_t mlToMs(uint32_t millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
+uint32_t msToMl(uint32_t milliseconds) { return milliseconds * PUMP_WATER_SPEED / 100000; }
 
-static const unsigned long ONE_HOUR = 3600000;
-static const unsigned long ONE_MINUTE = ONE_HOUR/60;
+static const uint32_t ONE_HOUR = 3600000;
+static const uint32_t ONE_MINUTE = ONE_HOUR/60;
 
 static const uint16_t CONTAINER_SIZE = 28000;  // Water container size in (ml)
 
-static const int PUMP_PORTION = 100;       // Amount of water pumped at once (ml)
-static const unsigned long PERIOD_TIME = 15*ONE_MINUTE; // Adjusted water amount is PUMP_PORTION / PERIOD_TIME.
+static const uint16_t PUMP_PORTION = 100;       // Amount of water pumped at once (ml)
+static const uint32_t PERIOD_TIME = 15*ONE_MINUTE; // Adjusted water amount is PUMP_PORTION / PERIOD_TIME.
 
 
-static const unsigned long PUMP_TIME = mlToMs(PUMP_PORTION);
-static const unsigned long IDLE_TIME = PERIOD_TIME - PUMP_TIME;
+static const uint32_t PUMP_TIME = mlToMs(PUMP_PORTION);
+static const uint32_t IDLE_TIME = PERIOD_TIME - PUMP_TIME;
 
-static const unsigned long WET_TIME = ONE_HOUR;
-static const unsigned long FORCE_STOP_TIME = ONE_HOUR;
-static const unsigned long MOTION_STOP_TIME = ONE_MINUTE * 15;
+static const uint32_t WET_TIME = ONE_HOUR;
+static const uint32_t FORCE_STOP_TIME = ONE_HOUR;
+static const uint32_t MOTION_STOP_TIME = ONE_MINUTE * 15;
 
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
@@ -130,7 +131,7 @@ void readEeprom() {
   if (eeprom_read_byte(EEPROM_CONFIGURED) != EEPROM_CHECKVALUE) {
     resetEEPROM();
   }
-  for (int i = 0; i < 24; i++) {
+  for (uint16_t i = 0; i < 24; i++) {
     pumpStatistics[i] = eeprom_read_word(EEPROM_PUMP_STATISTICS + i*2);
   }
   
@@ -143,7 +144,7 @@ void readEeprom() {
 }
 
 void saveEeprom() {
-  for (int i = 0; i < 24; i++) {
+  for (uint16_t i = 0; i < 24; i++) {
     eeprom_update_word(EEPROM_PUMP_STATISTICS + i*2, pumpStatistics[i]);
   }
   eeprom_update_word(EEPROM_PUMP_TOTAL, pumpedTotal);
@@ -156,14 +157,14 @@ void saveEeprom() {
 
 
 void dayPassed() {
-  for (int i = 23; i > 0; i--) {
+  for (uint16_t i = 23; i > 0; i--) {
     pumpStatistics[i] = pumpStatistics[i - 1];
   }
   pumpStatistics[0] = 0;
 }
 
 void resetEEPROM() {
-  for (int i = 23; i >= 0; i--) {
+  for (uint16_t i = 23; i >= 0; i--) {
     pumpStatistics[i] = 0;
   }
   pumpedTotal = 0;
@@ -178,7 +179,7 @@ void resetEEPROM() {
   //readEeprom();
 }
 
-static const int BUF_SIZE = 18;
+static const uint16_t BUF_SIZE = 18;
 char lcdBuf1[BUF_SIZE];
 char lcdBuf2[BUF_SIZE];
 char floatBuf1[BUF_SIZE];
@@ -218,7 +219,7 @@ void updateLcd() {
     long totalMinutes = minutesAgo(waterLevel ? pumpStartedMs: lastWetMs);
     long hours = totalMinutes/60;
     long minutesLeft = totalMinutes - hours*60;
-    int waterRemainingPercent = ((float)(CONTAINER_SIZE - pumpedTotal) / CONTAINER_SIZE)*100;
+    uint16_t waterRemainingPercent = ((float)(CONTAINER_SIZE - pumpedTotal) / CONTAINER_SIZE)*100;
     snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);
     snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s %2u:%02u           ", 
       waterRemainingPercent,
@@ -285,7 +286,7 @@ void readInput() {
     wasMotionStopped = true;
   }
 
-  moisture1Percent = 100 - (int)((float)analogRead(IN_MOISTURE1_PIN)/ 1023. * 100);
+  moisture1Percent = 100 - (uint16_t)((float)analogRead(IN_MOISTURE1_PIN)/ 1023. * 100);
   waterLevel = digitalRead(WATER_LEVEL_PIN);
 }
 
@@ -351,7 +352,7 @@ void manageWaterPump() {
 }
 
 void printStats() {
-  for(int i = 0; i<24; i++) {
+  for(uint16_t i = 0; i<24; i++) {
     Serial.println(pumpStatistics[i]);
   }
 }
