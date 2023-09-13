@@ -216,9 +216,9 @@ void updateLcd() {
     dtostrf((float)(pumpStatistics[0]/1000.0), 4, 1, floatBuf1);
     dtostrf((float)(pumpStatistics[1]/1000.0), 4, 1, floatBuf2);
     
-    long totalMinutes = minutesAgo(waterLevel ? pumpStartedMs: lastWetMs);
-    long hours = totalMinutes/60;
-    long minutesLeft = totalMinutes - hours*60;
+    int32_t totalMinutes = minutesAgo(waterLevel ? pumpStartedMs: lastWetMs);
+    int32_t hours = totalMinutes/60;
+    int32_t minutesLeft = totalMinutes - hours*60;
     uint16_t waterRemainingPercent = ((float)(CONTAINER_SIZE - pumpedTotal) / CONTAINER_SIZE)*100;
     snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);
     snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s %2u:%02u           ", 
@@ -395,7 +395,7 @@ void loop() {
   }
 
   if (timeNow - lastHourStarted > ONE_HOUR && !pumpRunning) {    
-    long correction = rtc.now().unixtime() - dateTimeNow.unixtime();
+    int32_t correction = rtc.now().unixtime() - dateTimeNow.unixtime();
     epochAtStart += correction * 1000;
     timeNow = epochAtStart + millis();
 
