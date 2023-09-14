@@ -37,14 +37,14 @@ uint16_t pumpStatistics[24];
 uint16_t pumpedTotal = 0;
 
 // EEPROM addresses
-static const uint16_t EEPROM_PUMP_STATISTICS = 0;
-static uint8_t* EEPROM_CONFIGURED = reinterpret_cast<uint8_t *>(48);
-static uint16_t* EEPROM_PUMP_TOTAL = reinterpret_cast<uint16_t *>(49);
+static const void* EEPROM_PUMP_STATISTICS = reinterpret_cast<void*>(0);
+static const uint8_t* EEPROM_CONFIGURED = reinterpret_cast<const uint8_t *>(48);
+static const uint16_t* EEPROM_PUMP_TOTAL = reinterpret_cast<const uint16_t *>(49);
 static const void* EEPROM_LAST_HOUR_STARTED = reinterpret_cast<const void *>(51);
 static const void* EEPROM_PUMP_STARTED = reinterpret_cast<const void *>(59);
 static const void* EEPROM_IDLE_STARTED = reinterpret_cast<const void *>(67);
 static const void* EEPROM_LAST_WET = reinterpret_cast<const void *>(75);
-static uint8_t* EEPROM_STATS_CUR_DAY = reinterpret_cast<uint8_t *>(83);
+static const uint8_t* EEPROM_STATS_CUR_DAY = reinterpret_cast<const uint8_t *>(83);
 static const uint16_t* EEPROM_LAST = reinterpret_cast<const uint16_t *>(83);
 
 static const uint8_t EEPROM_CHECKVALUE = 0b10101010;
@@ -134,16 +134,16 @@ void initializePins() {
 
 void saveEeprom() {
     for (uint16_t i = 0; i < 24; i++) {
-        eeprom_update_word(reinterpret_cast<uint16_t *>(EEPROM_PUMP_STATISTICS + i * 2), pumpStatistics[i]);
+        eeprom_update_block(&pumpStatistics[i], &EEPROM_PUMP_STATISTICS + i * 2, sizeof (pumpStatistics[i]));
     }
-    eeprom_update_word(EEPROM_PUMP_TOTAL, pumpedTotal);
+    eeprom_update_block(&pumpedTotal, &EEPROM_PUMP_TOTAL, sizeof pumpedTotal);
 
-    eeprom_update_block(&lastHourStarted, &EEPROM_LAST_HOUR_STARTED, 8);
-    eeprom_update_block(&pumpStartedMs, &EEPROM_PUMP_STARTED, 8);
-    eeprom_update_block(&idleStartedMs, &EEPROM_IDLE_STARTED, 8);
-    eeprom_update_block(&lastWetMs, &EEPROM_LAST_WET, 8);
+    eeprom_update_block(&lastHourStarted, &EEPROM_LAST_HOUR_STARTED, sizeof lastHourStarted);
+    eeprom_update_block(&pumpStartedMs, &EEPROM_PUMP_STARTED, sizeof pumpStartedMs);
+    eeprom_update_block(&idleStartedMs, &EEPROM_IDLE_STARTED, sizeof idleStartedMs);
+    eeprom_update_block(&lastWetMs, &EEPROM_LAST_WET, sizeof lastWetMs);
 
-    eeprom_update_byte(EEPROM_STATS_CUR_DAY, statisticsCurrentDay);
+    eeprom_update_block(&statisticsCurrentDay, &EEPROM_STATS_CUR_DAY, sizeof statisticsCurrentDay);
 }
 
 void resetEEPROM() {
@@ -158,7 +158,7 @@ void resetEEPROM() {
     lastWetMs = 0;
     forceStopStartedMs = 0;
     statisticsCurrentDay = dateTimeNow.day();
-    eeprom_update_byte(EEPROM_CONFIGURED, EEPROM_CHECKVALUE);
+    eeprom_update_block(&EEPROM_CHECKVALUE, &EEPROM_CONFIGURED, sizeof EEPROM_CHECKVALUE);
     saveEeprom();
 }
 
@@ -167,7 +167,7 @@ void readEeprom() {
         resetEEPROM();
     }
     for (uint16_t i = 0; i < 24; i++) {
-        pumpStatistics[i] = eeprom_read_word(reinterpret_cast<const uint16_t *>(EEPROM_PUMP_STATISTICS + i * 2));
+        eeprom_read_block(&pumpStatistics[i], &EEPROM_PUMP_STATISTICS + i * 2, 2);
     }
 
     pumpedTotal = eeprom_read_word(EEPROM_PUMP_TOTAL);
