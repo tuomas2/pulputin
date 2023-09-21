@@ -83,7 +83,7 @@ uint32_t msToMl(uint64_t milliseconds) { return milliseconds * PUMP_WATER_SPEED 
 static const uint32_t ONE_HOUR = 3600000;
 static const uint32_t ONE_MINUTE = ONE_HOUR/60;
 
-static const uint16_t CONTAINER_SIZE = 28000;  // Water container size in (ml)
+static const uint16_t CONTAINER_SIZE = 30000;  // Water container size in (ml)
 
 static const uint16_t PUMP_PORTION = 100;       // Amount of water pumped at once (ml)
 static const uint32_t PERIOD_TIME = 15*ONE_MINUTE; // Adjusted water amount is PUMP_PORTION / PERIOD_TIME.
@@ -233,7 +233,7 @@ void updateLcd() {
     );
   }
 
-  if(backlightBtn || (leftWater < 3.0 && timeNow/100 % 100 == 0 && !forceStoppedRecently())) {
+  if(backlightBtn || (leftWater < 5.0 && timeNow/100 % 100 == 0 && !forceStoppedRecently())) {
     analogWrite(ALARM_PIN, 50);
   } else {
     analogWrite(ALARM_PIN, 0);
