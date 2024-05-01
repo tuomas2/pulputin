@@ -250,8 +250,21 @@ bool resetButtonPressed = false;
 bool backlightButtonPressed = false;
 bool backlightOn = false;
 bool resetContainerPressed = false;
+bool forceRunPressed = false;
 
 void readInput() {
+  bool forceRunBtn = !digitalRead(BUTTON7_PIN);
+  if(forceRunBtn != forceRunPressed) {
+    if(forceRunBtn) {
+      digitalWrite(OUT_PUMP_PIN, HIGH);
+      digitalWrite(LED_BUILTIN, HIGH);
+    } else {
+      digitalWrite(OUT_PUMP_PIN, pumpRunning ? HIGH: LOW);
+      digitalWrite(LED_BUILTIN, pumpRunning ? HIGH: LOW);
+    }
+  }
+  forceRunPressed = forceRunBtn;
+
   bool containerBtn = !digitalRead(BUTTON6_PIN);
 
   if(containerBtn != resetContainerPressed && containerBtn) {
