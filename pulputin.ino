@@ -19,7 +19,7 @@ static const uint16_t WATER_LEVEL_PIN = 48;
 
 static const uint16_t IN_MOISTURE1_PIN = A0;
 
-static const uint16_t OUT_PUMP_PIN = 2; // PWM possible
+static const uint16_t OUT_PUMP_PIN = 4; // PWM possible
 static const uint16_t ALARM_PIN = 3;
 
 static const uint16_t MOTION_PIN = 52;
