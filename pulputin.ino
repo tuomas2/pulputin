@@ -4,7 +4,10 @@
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
 #include <RTClib.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
+static const uint16_t ONE_WIRE_PIN = 2;
 
 static const uint16_t BUTTON1_PIN = 39;
 static const uint16_t BUTTON2_PIN = 41;
@@ -24,7 +27,6 @@ static const uint16_t ALARM_PIN = 3;
 
 static const uint16_t MOTION_PIN = 52;
 static const uint16_t MOTION_GROUND_PIN = 50;
-
 
 uint16_t moisture1Percent = 0;
 bool waterLevel = false;
@@ -95,6 +97,11 @@ static const uint32_t IDLE_TIME = PERIOD_TIME - PUMP_TIME;
 static const uint32_t WET_TIME = ONE_HOUR;
 static const uint32_t FORCE_STOP_TIME = ONE_HOUR;
 static const uint32_t MOTION_STOP_TIME = ONE_MINUTE * 15;
+
+float tempC; 
+
+OneWire oneWire(ONE_WIRE_PIN);
+DallasTemperature sensors(&oneWire);
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 DS3231 rtc;
@@ -377,6 +384,7 @@ void setup() {
   Serial.begin(9600);
   Wire.begin();
   rtc.begin();
+  sensors.begin();
 
   if (!rtc.isrunning()) {
     Serial.println("RTC is NOT running!");
@@ -418,6 +426,8 @@ void loop() {
     lastHourStarted = timeNow;
     saveEeprom();
   }
+  sensors.requestTemperatures();
+  tempC = sensors.getTempCByIndex(0);
   readInput();
   manageWaterPump();
   updateLcd();

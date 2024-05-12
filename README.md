@@ -6,6 +6,8 @@ Arduino project that implements an automated watering system for my potted grape
 Uses libs:
  - [LiquidCrystal I2C](https://github.com/johnrickman/LiquidCrystal_I2C) by Frank de Brabarder, version 1.1.2 from Arduino library 
  - [RTCLib](https://github.com/NeiroNx/RTCLib) by NeironN by JeeLabs, version 1.6.3 from Arduino Library
+ - [OneWire](https://github.com/PaulStoffregen/OneWire) version 2.3.7
+ - [DallasTemperature](https://github.com/milesburton/Arduino-Temperature-Control-Library) version 3.9.0 
 
 Pictures
 --------
