@@ -52,7 +52,9 @@ static const uint16_t EEPROM_IDLE_STARTED = 67; // 8
 static const uint16_t EEPROM_LAST_WET = 75;
 static const uint16_t EEPROM_STATS_CUR_DAY = 83; // 1
 static const uint16_t EEPROM_DISPLAY_MODE = 84; // 1
-static const uint16_t EEPROM_LAST = 84;
+static const uint16_t EEPROM_HEATER_STARTED = 85; // 8
+
+static const uint16_t EEPROM_LAST = 93;
 
 static const byte EEPROM_CHECKVALUE = 0b10101010;
 
@@ -176,6 +178,8 @@ void readEeprom() {
   eeprom_read_block(&lastHourStarted, EEPROM_LAST_HOUR_STARTED, 8);
   eeprom_read_block(&pumpStartedMs, EEPROM_PUMP_STARTED, 8); 
   eeprom_read_block(&idleStartedMs, EEPROM_IDLE_STARTED, 8); 
+  eeprom_read_block(&heaterStartedMs, EEPROM_HEATER_STARTED, 8); 
+
   eeprom_read_block(&lastWetMs, EEPROM_LAST_WET, 8); 
  
   statisticsCurrentDay = eeprom_read_byte(EEPROM_STATS_CUR_DAY); 
@@ -191,6 +195,8 @@ void saveEeprom() {
   eeprom_update_block(&lastHourStarted, EEPROM_LAST_HOUR_STARTED, 8);
   eeprom_update_block(&pumpStartedMs, EEPROM_PUMP_STARTED, 8);
   eeprom_update_block(&idleStartedMs, EEPROM_IDLE_STARTED, 8);
+  eeprom_update_block(&heaterStartedMs, EEPROM_HEATER_STARTED, 8);
+
   eeprom_update_block(&lastWetMs, EEPROM_LAST_WET, 8);
 
   eeprom_update_byte(EEPROM_STATS_CUR_DAY, statisticsCurrentDay);
@@ -279,19 +285,13 @@ void updateLcdSummer() {
 void updateLcdWinter() {
     dtostrf(temperature, 4, 1, floatBuf1);
 
-    //dtostrf((float)(pumpStatistics[0]/1000.0), 4, 1, floatBuf1);
-    dtostrf((float)(pumpStatistics[1]/1000.0), 4, 1, floatBuf2);
-    
-    int32_t totalMinutes = minutesAgo(waterLevel ? pumpStartedMs: lastWetMs);
+    int32_t totalMinutes = minutesAgo(heaterStartedMs);
     int32_t hours = totalMinutes/60;
     int32_t minutesLeft = totalMinutes - hours*60;
-    uint16_t waterRemainingPercent = ((float)(CONTAINER_SIZE - pumpedTotal - 1) / CONTAINER_SIZE)*100;
-    snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);
-    snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s %2u:%02u           ", 
-      waterRemainingPercent,
-      waterLevel ? "We" : "Dr",
-      motionSns ? "Mo": "  ",
-      cantStart() ? "St" : "  ", 
+
+    snprintf(lcdBuf1, BUF_SIZE, "%s C %luh %lum         ", floatBuf1, hours, minutesLeft);
+    snprintf(lcdBuf2, BUF_SIZE, "%s %2u:%02u                    ", 
+      heaterRunning ? "He" : "  ",
       dateTimeNow.hour(), dateTimeNow.minute()
     );
 }
@@ -402,6 +402,7 @@ void startHeat() {
   heaterStartedMs = timeNow;
   digitalWrite(OUT_HEATER_PIN, HIGH);
   updateBuiltinLed();
+  saveEeprom();
 }
 
 void stopHeat() {
