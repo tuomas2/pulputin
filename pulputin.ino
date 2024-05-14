@@ -94,10 +94,14 @@ static const uint16_t PUMP_WATER_SPEED = 116;  // Pump speed, ml per 100 seconds
 uint64_t mlToMs(uint32_t millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
 uint32_t msToMl(uint64_t milliseconds) { return milliseconds * PUMP_WATER_SPEED / 100000; }
 
+static const float TEMP_LIMIT = 8.0;
+static const float TEMP_ALARM_LOW = 5.0;
+static const float TEMP_ALARM_HIGH = 12.0;
+
 static const uint32_t HEATER_POWER = 50; // Watts
 static const uint32_t TARGET_POWER = 1; // Watts
 static const uint32_t HEATER_ON_TIME = 5; // Seconds
-static const uint32_t HEATER_IDLE_TIME = (TARGET_POWER / HEATER_POWER) * HEATER_ON_TIME - HEATER_ON_TIME;  
+static const uint32_t HEATER_IDLE_TIME = HEATER_POWER * (float)HEATER_ON_TIME / TARGET_POWER - HEATER_ON_TIME;  
 
 static const uint8_t DISPLAY_SUMMER = 0;
 static const uint8_t DISPLAY_WINTER = 1;
@@ -118,10 +122,6 @@ static const uint32_t IDLE_TIME = PERIOD_TIME - PUMP_TIME;
 static const uint32_t WET_TIME = ONE_HOUR;
 static const uint32_t FORCE_STOP_TIME = ONE_HOUR;
 static const uint32_t MOTION_STOP_TIME = ONE_MINUTE * 15;
-
-static const float TEMP_LIMIT = 10.0;
-static const float TEMP_ALARM_LOW = 5.0;
-static const float TEMP_ALARM_HIGH = 12.0;
 
 
 float temperature; // in celsius 
@@ -357,6 +357,7 @@ void readInput() {
 }
 
 void startHeat() {
+  Serial.println("startHeat");
   heaterRunning = true;
   heaterStartedMs = timeNow;
   digitalWrite(OUT_HEATER_PIN, HIGH);
@@ -364,6 +365,7 @@ void startHeat() {
 }
 
 void stopHeat() {
+  Serial.println("stopHeat");
   heaterRunning = false;
   heaterIdleStartedMs = timeNow;
   updateBuiltinLed();
@@ -410,8 +412,8 @@ bool wetRecently() { return wasWet && (timeNow - lastWetMs < WET_TIME); }
 bool forceStoppedRecently() { return wasForceStopped && (timeNow - forceStopStartedMs < FORCE_STOP_TIME); }
 bool motionStoppedRecently() { return wasMotionStopped && (timeNow - motionStopStartedMs < MOTION_STOP_TIME); }
 
-bool stopHeaterTimePassed() { return timeNow - heaterStartedMs < HEATER_ON_TIME; }
-bool heaterIdleTimePassed() { return timeNow - heaterIdleStartedMs < HEATER_IDLE_TIME; }
+bool stopHeaterTimePassed() { return timeNow - heaterStartedMs > HEATER_ON_TIME*1000; }
+bool heaterIdleTimePassed() { return timeNow - heaterIdleStartedMs > HEATER_IDLE_TIME*1000; }
 bool isTriggerTemp() { return temperature < TEMP_LIMIT; }
 bool isAlarmTemp() { return temperature < TEMP_ALARM_LOW || temperature > TEMP_ALARM_HIGH; }
 
@@ -441,10 +443,10 @@ void manageWaterPump() {
 }
 
 void manageHeater() {
-  if (heaterRunning && stopHeaterTimePassed()) {
-      stopHeat();
-  } else if (heaterIdleTimePassed() && isTriggerTemp()) {
-      startHeat();
+  if (heaterRunning) {
+    if(stopHeaterTimePassed()) stopHeat();
+  } else if (heaterIdleTimePassed() && isTriggerTemp()) { 
+    startHeat();
   }
 }
 
@@ -485,6 +487,9 @@ void setup() {
   readEeprom();
   printStats();
   lcd.init();
+  Serial.println("Heat params in seconds");
+  Serial.println(HEATER_ON_TIME);
+  Serial.println(HEATER_IDLE_TIME);
 }
 
 void loop() {
@@ -508,6 +513,7 @@ void loop() {
   if (timeNow - tempLastRead > 10000) {
     sensors.requestTemperatures();
     temperature = sensors.getTempCByIndex(0);
+    Serial.println(temperature);
     tempLastRead = timeNow;
   }
   readInput();
