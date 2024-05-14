@@ -461,7 +461,7 @@ bool isTriggerTemp() { return temperature < TEMP_LIMIT; }
 bool isAlarmTemp() { return temperature < TEMP_ALARM_LOW || temperature > TEMP_ALARM_HIGH; }
 
 
-bool cantStart() { return wetRecently() || forceStoppedRecently() || motionStoppedRecently(); }
+bool cantStart() { return isTriggerTemp() || wetRecently() || forceStoppedRecently() || motionStoppedRecently(); }
 
 void manageWaterPump() {
   updateMaxWaterLevel();
