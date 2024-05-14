@@ -99,7 +99,6 @@ uint32_t msToMl(uint64_t milliseconds) { return milliseconds * PUMP_WATER_SPEED 
 
 static const float TEMP_LIMIT = 8.0;
 static const float TEMP_ALARM_LOW = 5.0;
-static const float TEMP_ALARM_HIGH = 12.0;
 
 static const uint32_t HEATER_POWER = 50; // Watts
 static const uint32_t TARGET_POWER = 1; // Watts
@@ -458,7 +457,7 @@ bool motionStoppedRecently() { return wasMotionStopped && (timeNow - motionStopS
 bool stopHeaterTimePassed() { return timeNow - heaterStartedMs > HEATER_ON_TIME*1000; }
 bool heaterIdleTimePassed() { return timeNow - heaterIdleStartedMs > HEATER_IDLE_TIME*1000; }
 bool isTriggerTemp() { return temperature < TEMP_LIMIT; }
-bool isAlarmTemp() { return temperature < TEMP_ALARM_LOW || temperature > TEMP_ALARM_HIGH; }
+bool isAlarmTemp() { return temperature < TEMP_ALARM_LOW }
 
 
 bool cantStart() { return isTriggerTemp() || wetRecently() || forceStoppedRecently() || motionStoppedRecently(); }
