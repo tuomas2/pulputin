@@ -7,7 +7,8 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-static const uint16_t ONE_WIRE_PIN = 2;
+static const uint16_t ONE_WIRE_PIN = 30; // Temperature sensor
+static const uint16_t OUT_HEATER_PIN = 32;
 
 static const uint16_t BUTTON1_PIN = 39;
 static const uint16_t BUTTON2_PIN = 41;
@@ -32,6 +33,7 @@ uint16_t moisture1Percent = 0;
 bool waterLevel = false;
 bool maxWaterLevel = false; 
 bool motionSns = false;
+bool alarmRunning = false;
 
 
 // How many ml water has been pumped each hour
@@ -44,12 +46,13 @@ uint16_t pumpedTotal = 0;
 static const uint16_t EEPROM_PUMP_STATISTICS = 0;
 static const uint16_t EEPROM_CONFIGURED = 48;
 static const uint16_t EEPROM_PUMP_TOTAL = 49;
-static const uint16_t EEPROM_LAST_HOUR_STARTED = 51;
-static const uint16_t EEPROM_PUMP_STARTED = 59;
-static const uint16_t EEPROM_IDLE_STARTED = 67;
+static const uint16_t EEPROM_LAST_HOUR_STARTED = 51; // 8
+static const uint16_t EEPROM_PUMP_STARTED = 59; // 8
+static const uint16_t EEPROM_IDLE_STARTED = 67; // 8
 static const uint16_t EEPROM_LAST_WET = 75;
-static const uint16_t EEPROM_STATS_CUR_DAY = 83;
-static const uint16_t EEPROM_LAST = 83;
+static const uint16_t EEPROM_STATS_CUR_DAY = 83; // 1
+static const uint16_t EEPROM_DISPLAY_MODE = 84; // 1
+static const uint16_t EEPROM_LAST = 84;
 
 static const byte EEPROM_CHECKVALUE = 0b10101010;
 
@@ -61,6 +64,8 @@ uint64_t timeNow = 0;
 DateTime dateTimeNow;
 
 uint64_t lastHourStarted = 0;
+uint64_t tempLastRead = 0;
+
 uint64_t pumpStartedMs = 0;
 uint64_t idleStartedMs = 0;
 uint64_t lastWetMs = 0;
@@ -69,10 +74,17 @@ uint64_t motionStopStartedMs = 0;
 
 uint8_t statisticsCurrentDay = 0;
 
+uint8_t displayMode = 0; // DISPLAY_*
+
 bool wasMotionStopped = false;
 bool wasForceStopped = false;
 bool wasWet = false;
 bool pumpRunning = false;
+
+uint64_t heaterStartedMs = 0;
+uint64_t heaterIdleStartedMs = 0;
+
+bool heaterRunning = false;
 
 uint16_t minutesAgo(uint64_t timestamp) { return (timeNow - timestamp) / 1000 / 60; }
 
@@ -81,6 +93,15 @@ static const uint16_t PUMP_WATER_SPEED = 116;  // Pump speed, ml per 100 seconds
 // Convert millilitres to milliseconds and vice versa
 uint64_t mlToMs(uint32_t millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
 uint32_t msToMl(uint64_t milliseconds) { return milliseconds * PUMP_WATER_SPEED / 100000; }
+
+static const uint32_t HEATER_POWER = 50; // Watts
+static const uint32_t TARGET_POWER = 1; // Watts
+static const uint32_t HEATER_ON_TIME = 5; // Seconds
+static const uint32_t HEATER_IDLE_TIME = (TARGET_POWER / HEATER_POWER) * HEATER_ON_TIME - HEATER_ON_TIME;  
+
+static const uint8_t DISPLAY_SUMMER = 0;
+static const uint8_t DISPLAY_WINTER = 1;
+static const uint8_t DISPLAY_INTERVAL = 2;
 
 static const uint32_t ONE_HOUR = 3600000;
 static const uint32_t ONE_MINUTE = ONE_HOUR/60;
@@ -98,7 +119,12 @@ static const uint32_t WET_TIME = ONE_HOUR;
 static const uint32_t FORCE_STOP_TIME = ONE_HOUR;
 static const uint32_t MOTION_STOP_TIME = ONE_MINUTE * 15;
 
-float tempC; 
+static const float TEMP_LIMIT = 10.0;
+static const float TEMP_ALARM_LOW = 5.0;
+static const float TEMP_ALARM_HIGH = 12.0;
+
+
+float temperature; // in celsius 
 
 OneWire oneWire(ONE_WIRE_PIN);
 DallasTemperature sensors(&oneWire);
@@ -119,6 +145,7 @@ void initializePins() {
 
   pinMode(IN_MOISTURE1_PIN, INPUT);
   pinMode(OUT_PUMP_PIN, OUTPUT);
+  pinMode(OUT_HEATER_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(ALARM_PIN, OUTPUT);
 
@@ -130,6 +157,7 @@ void initializePins() {
   digitalWrite(LED_BUILTIN, LOW);
   digitalWrite(ALARM_PIN, LOW);
   digitalWrite(OUT_PUMP_PIN, LOW);
+  digitalWrite(OUT_HEATER_PIN, LOW);
 }
 
 void readEeprom() {
@@ -148,6 +176,7 @@ void readEeprom() {
   eeprom_read_block(&lastWetMs, EEPROM_LAST_WET, 8); 
  
   statisticsCurrentDay = eeprom_read_byte(EEPROM_STATS_CUR_DAY); 
+  displayMode = eeprom_read_byte(EEPROM_DISPLAY_MODE);
 }
 
 void saveEeprom() {
@@ -162,6 +191,7 @@ void saveEeprom() {
   eeprom_update_block(&lastWetMs, EEPROM_LAST_WET, 8);
 
   eeprom_update_byte(EEPROM_STATS_CUR_DAY, statisticsCurrentDay);
+  eeprom_update_byte(EEPROM_DISPLAY_MODE, displayMode);
 }
 
 
@@ -223,6 +253,8 @@ void updateLcd() {
     snprintf(lcdBuf1, BUF_SIZE, "Wet %u min ago        ", minutesAgo(lastWetMs));
     snprintf(lcdBuf2, BUF_SIZE, "Pumped %u min ago        ", minutesAgo(pumpStartedMs));
   } else {
+    //dtostrf(temperature, 4, 1, floatBuf1);
+
     dtostrf((float)(pumpStatistics[0]/1000.0), 4, 1, floatBuf1);
     dtostrf((float)(pumpStatistics[1]/1000.0), 4, 1, floatBuf2);
     
@@ -240,7 +272,7 @@ void updateLcd() {
     );
   }
 
-  if(backlightBtn || (leftWater < 5.0 && timeNow/100 % 100 == 0 && !forceStoppedRecently())) {
+  if(backlightBtn || (alarmRunning && timeNow/100 % 100 == 0)) {
     analogWrite(ALARM_PIN, 50);
   } else {
     analogWrite(ALARM_PIN, 0);
@@ -258,8 +290,19 @@ bool backlightButtonPressed = false;
 bool backlightOn = false;
 bool resetContainerPressed = false;
 bool forceRunPressed = false;
+bool modeChangePressed = false;
+
 
 void readInput() {
+  bool modeChangeBtn = !digitalRead(BUTTON2_PIN);
+  if (modeChangeBtn != modeChangePressed) {
+    if(modeChangeBtn) {
+      displayMode = (displayMode + 1) % 3;
+      saveEeprom();
+      Serial.println(displayMode);
+    }
+  }
+  modeChangePressed = modeChangeBtn;
   bool forceRunBtn = !digitalRead(BUTTON7_PIN);
   if(forceRunBtn != forceRunPressed) {
     if(forceRunBtn) {
@@ -313,11 +356,28 @@ void readInput() {
   waterLevel = digitalRead(WATER_LEVEL_PIN);
 }
 
+void startHeat() {
+  heaterRunning = true;
+  heaterStartedMs = timeNow;
+  digitalWrite(OUT_HEATER_PIN, HIGH);
+  updateBuiltinLed();
+}
+
+void stopHeat() {
+  heaterRunning = false;
+  heaterIdleStartedMs = timeNow;
+  updateBuiltinLed();
+}
+
+void updateBuiltinLed() {
+   digitalWrite(LED_BUILTIN, (heaterRunning || pumpRunning) ? HIGH: LOW);
+}
+
 void startPump() {
   pumpRunning = true;
   pumpStartedMs = timeNow;
   digitalWrite(OUT_PUMP_PIN, HIGH);
-  digitalWrite(LED_BUILTIN, HIGH);
+  updateBuiltinLed();
   resetMaxWaterLevel();
   saveEeprom();
 }
@@ -325,7 +385,7 @@ void startPump() {
 void stopPump() {
   pumpRunning = false;
   digitalWrite(OUT_PUMP_PIN, LOW);
-  digitalWrite(LED_BUILTIN, LOW);
+  updateBuiltinLed();
   uint16_t pumped = msToMl(timeNow - pumpStartedMs);
   pumpStatistics[0] += pumped; 
   pumpedTotal += pumped;
@@ -350,6 +410,12 @@ bool wetRecently() { return wasWet && (timeNow - lastWetMs < WET_TIME); }
 bool forceStoppedRecently() { return wasForceStopped && (timeNow - forceStopStartedMs < FORCE_STOP_TIME); }
 bool motionStoppedRecently() { return wasMotionStopped && (timeNow - motionStopStartedMs < MOTION_STOP_TIME); }
 
+bool stopHeaterTimePassed() { return timeNow - heaterStartedMs < HEATER_ON_TIME; }
+bool heaterIdleTimePassed() { return timeNow - heaterIdleStartedMs < HEATER_IDLE_TIME; }
+bool isTriggerTemp() { return temperature < TEMP_LIMIT; }
+bool isAlarmTemp() { return temperature < TEMP_ALARM_LOW || temperature > TEMP_ALARM_HIGH; }
+
+
 bool cantStart() { return wetRecently() || forceStoppedRecently() || motionStoppedRecently(); }
 
 void manageWaterPump() {
@@ -372,6 +438,19 @@ void manageWaterPump() {
       idleStartedMs = timeNow;
     }
   }
+}
+
+void manageHeater() {
+  if (heaterRunning && stopHeaterTimePassed()) {
+      stopHeat();
+  } else if (heaterIdleTimePassed() && isTriggerTemp()) {
+      startHeat();
+  }
+}
+
+void manageAlarm() {
+  float leftWater = (CONTAINER_SIZE - pumpedTotal)/1000.0;
+  alarmRunning = isAlarmTemp() || (leftWater < 5.0 && !forceStoppedRecently());
 }
 
 void printStats() {
@@ -426,9 +505,14 @@ void loop() {
     lastHourStarted = timeNow;
     saveEeprom();
   }
-  sensors.requestTemperatures();
-  tempC = sensors.getTempCByIndex(0);
+  if (timeNow - tempLastRead > 10000) {
+    sensors.requestTemperatures();
+    temperature = sensors.getTempCByIndex(0);
+    tempLastRead = timeNow;
+  }
   readInput();
   manageWaterPump();
+  manageHeater();
+  manageAlarm();
   updateLcd();
 }
