@@ -129,7 +129,8 @@ static const uint32_t FORCE_STOP_TIME = ONE_HOUR;
 static const uint32_t MOTION_STOP_TIME = ONE_MINUTE * 15;
 
 
-float temperature; // in celsius 
+float temperature = TEMP_LIMIT + 1; // in celsius 
+bool tempSensorFail = false;
 
 OneWire oneWire(ONE_WIRE_PIN);
 DallasTemperature sensors(&oneWire);
@@ -290,8 +291,9 @@ void updateLcdWinter() {
     int32_t minutesLeft = totalMinutes - hours*60;
 
     snprintf(lcdBuf1, BUF_SIZE, "%s C %luh %lum         ", floatBuf1, hours, minutesLeft);
-    snprintf(lcdBuf2, BUF_SIZE, "%s %2u:%02u                    ", 
+    snprintf(lcdBuf2, BUF_SIZE, "%s %s %2u:%02u                    ", 
       heaterRunning ? "He" : "  ",
+      tempSensorFail ? "!!" : "  ",
       dateTimeNow.hour(), dateTimeNow.minute()
     );
 }
@@ -493,7 +495,7 @@ void manageHeater() {
 
 void manageAlarm() {
   float leftWater = (CONTAINER_SIZE - pumpedTotal)/1000.0;
-  alarmRunning = isAlarmTemp() || (leftWater < 5.0 && !forceStoppedRecently());
+  alarmRunning = tempSensorFail || isAlarmTemp() || (leftWater < 5.0 && !forceStoppedRecently());
 }
 
 void printStats() {
@@ -553,7 +555,14 @@ void loop() {
   }
   if (timeNow - tempLastRead > 10000) {
     sensors.requestTemperatures();
-    temperature = sensors.getTempCByIndex(0);
+    float temp = sensors.getTempCByIndex(0);
+    if (temp != DEVICE_DISCONNECTED_C) {
+      temperature = temp;
+      tempSensorFail = false;
+    } else {
+      temperature = TEMP_LIMIT + 1;
+      tempSensorFail = true;
+    }
     Serial.println(temperature);
     tempLastRead = timeNow;
   }
