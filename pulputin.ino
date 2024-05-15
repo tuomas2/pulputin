@@ -300,7 +300,7 @@ void updateLcdWinter() {
     dtostrf((float)(heatStatistics[1]/1000.0), 4, 1, floatBuf2);
     dtostrf(temperature, 4, 1, floatBuf3);
     snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);    
-    snprintf(lcdBuf2, BUF_SIZE, "%s C %s %s %2u:%02u                    ", 
+    snprintf(lcdBuf2, BUF_SIZE, "%sC %s%s %2u:%02u                    ", 
       floatBuf3, 
       heaterRunning ? "He" : "  ",
       tempSensorFail ? "!!" : "  ",
