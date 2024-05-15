@@ -42,8 +42,11 @@ bool alarmRunning = false;
 uint16_t pumpStatistics[24]; 
 uint16_t pumpedTotal = 0;
 
+// How many ms has been spent to heat, each hour.
+uint16_t heatStatistics[24]; 
+
 // EEPROM addresses
-static const uint16_t EEPROM_PUMP_STATISTICS = 0;
+static const uint16_t EEPROM_PUMP_STATISTICS = 0; // 48
 static const uint16_t EEPROM_CONFIGURED = 48;
 static const uint16_t EEPROM_PUMP_TOTAL = 49;
 static const uint16_t EEPROM_LAST_HOUR_STARTED = 51; // 8
@@ -53,8 +56,8 @@ static const uint16_t EEPROM_LAST_WET = 75;
 static const uint16_t EEPROM_STATS_CUR_DAY = 83; // 1
 static const uint16_t EEPROM_DISPLAY_MODE = 84; // 1
 static const uint16_t EEPROM_HEATER_STARTED = 85; // 8
-
-static const uint16_t EEPROM_LAST = 93;
+static const uint16_t EEPROM_HEAT_STATISTICS = 93; // 48
+static const uint16_t EEPROM_LAST = 140; 
 
 static const byte EEPROM_CHECKVALUE = 0b10101010;
 
@@ -171,8 +174,9 @@ void readEeprom() {
   }
   for (uint16_t i = 0; i < 24; i++) {
     pumpStatistics[i] = eeprom_read_word(EEPROM_PUMP_STATISTICS + i*2);
+    heatStatistics[i] = eeprom_read_word(EEPROM_HEAT_STATISTICS + i*2);
   }
-  
+
   pumpedTotal = eeprom_read_word(EEPROM_PUMP_TOTAL);
 
   eeprom_read_block(&lastHourStarted, EEPROM_LAST_HOUR_STARTED, 8);
@@ -189,7 +193,9 @@ void readEeprom() {
 void saveEeprom() {
   for (uint16_t i = 0; i < 24; i++) {
     eeprom_update_word(EEPROM_PUMP_STATISTICS + i*2, pumpStatistics[i]);
+    eeprom_update_word(EEPROM_HEAT_STATISTICS + i*2, heatStatistics[i]);
   }
+ 
   eeprom_update_word(EEPROM_PUMP_TOTAL, pumpedTotal);
   
   eeprom_update_block(&lastHourStarted, EEPROM_LAST_HOUR_STARTED, 8);
@@ -207,13 +213,16 @@ void saveEeprom() {
 void dayPassed() {
   for (int16_t i = 23; i > 0; i--) {
     pumpStatistics[i] = pumpStatistics[i - 1];
+    heatStatistics[i] = heatStatistics[i - 1];
   }
   pumpStatistics[0] = 0;
+  heatStatistics[0] = 0;
 }
 
 void resetEEPROM() {
   for (int16_t i = 23; i >= 0; i--) {
     pumpStatistics[i] = 0;
+    heatStatistics[i] = 0;
   }
 
   pumpedTotal = 0;
@@ -233,6 +242,7 @@ char lcdBuf1[BUF_SIZE];
 char lcdBuf2[BUF_SIZE];
 char floatBuf1[BUF_SIZE];
 char floatBuf2[BUF_SIZE];
+char floatBuf3[BUF_SIZE];
 
 void updateLcdSummer() {
   bool showForceStop = !digitalRead(BUTTON4_PIN);
@@ -262,8 +272,6 @@ void updateLcdSummer() {
     snprintf(lcdBuf1, BUF_SIZE, "Wet %u min ago        ", minutesAgo(lastWetMs));
     snprintf(lcdBuf2, BUF_SIZE, "Pumped %u min ago        ", minutesAgo(pumpStartedMs));
   } else {
-    //dtostrf(temperature, 4, 1, floatBuf1);
-
     dtostrf((float)(pumpStatistics[0]/1000.0), 4, 1, floatBuf1);
     dtostrf((float)(pumpStatistics[1]/1000.0), 4, 1, floatBuf2);
     
@@ -283,14 +291,17 @@ void updateLcdSummer() {
 }
 
 void updateLcdWinter() {
-    dtostrf(temperature, 4, 1, floatBuf1);
 
     int32_t totalMinutes = minutesAgo(heaterStartedMs);
     int32_t hours = totalMinutes/60;
     int32_t minutesLeft = totalMinutes - hours*60;
 
-    snprintf(lcdBuf1, BUF_SIZE, "%s C %luh %lum         ", floatBuf1, hours, minutesLeft);
-    snprintf(lcdBuf2, BUF_SIZE, "%s %s %2u:%02u                    ", 
+    dtostrf((float)(heatStatistics[0]/1000.0), 4, 1, floatBuf1);
+    dtostrf((float)(heatStatistics[1]/1000.0), 4, 1, floatBuf2);
+    dtostrf(temperature, 4, 1, floatBuf3);
+    snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);    
+    snprintf(lcdBuf2, BUF_SIZE, "%s C %s %s %2u:%02u                    ", 
+      floatBuf3, 
       heaterRunning ? "He" : "  ",
       tempSensorFail ? "!!" : "  ",
       dateTimeNow.hour(), dateTimeNow.minute()
@@ -410,6 +421,8 @@ void stopHeat() {
   Serial.println("stopHeat");
   heaterRunning = false;
   heaterIdleStartedMs = timeNow;
+  uint16_t heaterTime = timeNow - heaterStartedMs;
+  heatStatistics[0] += heaterTime;
   updateBuiltinLed();
 }
 
@@ -457,8 +470,7 @@ bool motionStoppedRecently() { return wasMotionStopped && (timeNow - motionStopS
 bool stopHeaterTimePassed() { return timeNow - heaterStartedMs > HEATER_ON_TIME*1000; }
 bool heaterIdleTimePassed() { return timeNow - heaterIdleStartedMs > HEATER_IDLE_TIME*1000; }
 bool isTriggerTemp() { return temperature < TEMP_LIMIT; }
-bool isAlarmTemp() { return temperature < TEMP_ALARM_LOW }
-
+bool isAlarmTemp() { return temperature < TEMP_ALARM_LOW; }
 
 bool cantStart() { return isTriggerTemp() || wetRecently() || forceStoppedRecently() || motionStoppedRecently(); }
 
