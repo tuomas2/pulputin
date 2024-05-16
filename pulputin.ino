@@ -42,8 +42,8 @@ bool alarmRunning = false;
 uint16_t pumpStatistics[24]; 
 uint16_t pumpedTotal = 0;
 
-// How many ms has been spent to heat, each hour.
-uint16_t heatStatistics[24]; 
+// How many milliseconds has been spent to heat, each hour.
+uint32_t heatStatistics[24]; 
 
 // EEPROM addresses
 static const uint16_t EEPROM_PUMP_STATISTICS = 0; // 48
@@ -56,8 +56,8 @@ static const uint16_t EEPROM_LAST_WET = 75;
 static const uint16_t EEPROM_STATS_CUR_DAY = 83; // 1
 static const uint16_t EEPROM_DISPLAY_MODE = 84; // 1
 static const uint16_t EEPROM_HEATER_STARTED = 85; // 8
-static const uint16_t EEPROM_HEAT_STATISTICS = 93; // 48
-static const uint16_t EEPROM_LAST = 140; 
+static const uint16_t EEPROM_HEAT_STATISTICS = 93; // 96
+static const uint16_t EEPROM_LAST = 188; 
 
 static const byte EEPROM_CHECKVALUE = 0b10101010;
 
@@ -174,7 +174,7 @@ void readEeprom() {
   }
   for (uint16_t i = 0; i < 24; i++) {
     pumpStatistics[i] = eeprom_read_word(EEPROM_PUMP_STATISTICS + i*2);
-    heatStatistics[i] = eeprom_read_word(EEPROM_HEAT_STATISTICS + i*2);
+    heatStatistics[i] = eeprom_read_dword(EEPROM_HEAT_STATISTICS + i*4);
   }
 
   pumpedTotal = eeprom_read_word(EEPROM_PUMP_TOTAL);
@@ -193,7 +193,7 @@ void readEeprom() {
 void saveEeprom() {
   for (uint16_t i = 0; i < 24; i++) {
     eeprom_update_word(EEPROM_PUMP_STATISTICS + i*2, pumpStatistics[i]);
-    eeprom_update_word(EEPROM_HEAT_STATISTICS + i*2, heatStatistics[i]);
+    eeprom_update_dword(EEPROM_HEAT_STATISTICS + i*4, heatStatistics[i]);
   }
  
   eeprom_update_word(EEPROM_PUMP_TOTAL, pumpedTotal);
@@ -296,8 +296,8 @@ void updateLcdWinter() {
     int32_t hours = totalMinutes/60;
     int32_t minutesLeft = totalMinutes - hours*60;
 
-    dtostrf((float)(heatStatistics[0]/1000.0), 4, 1, floatBuf1);
-    dtostrf((float)(heatStatistics[1]/1000.0), 4, 1, floatBuf2);
+    dtostrf((float)(heatStatistics[0]/60000.0), 4, 1, floatBuf1); // Show heat on in minutes 
+    dtostrf((float)(heatStatistics[1]/60000.0), 4, 1, floatBuf2);
     dtostrf(temperature, 4, 1, floatBuf3);
     snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);    
     snprintf(lcdBuf2, BUF_SIZE, "%sC %s%s %2u:%02u                    ", 
@@ -414,16 +414,16 @@ void startHeat() {
   heaterStartedMs = timeNow;
   digitalWrite(OUT_HEATER_PIN, HIGH);
   updateBuiltinLed();
-  saveEeprom();
 }
 
 void stopHeat() {
   Serial.println("stopHeat");
   heaterRunning = false;
   heaterIdleStartedMs = timeNow;
-  uint16_t heaterTime = timeNow - heaterStartedMs;
+  uint32_t heaterTime = timeNow - heaterStartedMs;
   heatStatistics[0] += heaterTime;
   updateBuiltinLed();
+  saveEeprom();
 }
 
 void updateBuiltinLed() {
@@ -443,7 +443,7 @@ void stopPump() {
   pumpRunning = false;
   digitalWrite(OUT_PUMP_PIN, LOW);
   updateBuiltinLed();
-  uint16_t pumped = msToMl(timeNow - pumpStartedMs);
+  uint32_t pumped = msToMl(timeNow - pumpStartedMs);
   pumpStatistics[0] += pumped; 
   pumpedTotal += pumped;
   idleStartedMs = timeNow;
