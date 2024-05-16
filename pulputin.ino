@@ -100,12 +100,17 @@ static const uint16_t PUMP_WATER_SPEED = 116;  // Pump speed, ml per 100 seconds
 uint64_t mlToMs(uint32_t millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
 uint32_t msToMl(uint64_t milliseconds) { return milliseconds * PUMP_WATER_SPEED / 100000; }
 
+
+static const uint32_t ONE_SECOND = 1000;
+static const uint32_t ONE_HOUR = 3600000;
+static const uint32_t ONE_MINUTE = ONE_HOUR/60;
+
 static const float TEMP_LIMIT = 8.0;
 static const float TEMP_ALARM_LOW = 5.0;
 
 static const uint32_t HEATER_POWER = 50; // Watts
 static const uint32_t TARGET_POWER = 1; // Watts
-static const uint32_t HEATER_ON_TIME = 5; // Seconds
+static const uint32_t HEATER_ON_TIME = 5*ONE_SECOND;
 static const uint32_t HEATER_IDLE_TIME = HEATER_POWER * (float)HEATER_ON_TIME / TARGET_POWER - HEATER_ON_TIME;  
 
 static const uint8_t DISPLAY_SUMMER = 0;
@@ -113,9 +118,6 @@ static const uint8_t DISPLAY_WINTER = 1;
 static const uint8_t DISPLAY_INTERVAL = 2;
 
 uint8_t modeNow = DISPLAY_SUMMER;
-
-static const uint32_t ONE_HOUR = 3600000;
-static const uint32_t ONE_MINUTE = ONE_HOUR/60;
 
 static const uint16_t CONTAINER_SIZE = 30000;  // Water container size in (ml)
 
@@ -467,8 +469,8 @@ bool wetRecently() { return wasWet && (timeNow - lastWetMs < WET_TIME); }
 bool forceStoppedRecently() { return wasForceStopped && (timeNow - forceStopStartedMs < FORCE_STOP_TIME); }
 bool motionStoppedRecently() { return wasMotionStopped && (timeNow - motionStopStartedMs < MOTION_STOP_TIME); }
 
-bool stopHeaterTimePassed() { return timeNow - heaterStartedMs > HEATER_ON_TIME*1000; }
-bool heaterIdleTimePassed() { return timeNow - heaterIdleStartedMs > HEATER_IDLE_TIME*1000; }
+bool stopHeaterTimePassed() { return timeNow - heaterStartedMs > HEATER_ON_TIME; }
+bool heaterIdleTimePassed() { return timeNow - heaterIdleStartedMs > HEATER_IDLE_TIME; }
 bool isTriggerTemp() { return temperature < TEMP_LIMIT; }
 bool isAlarmTemp() { return temperature < TEMP_ALARM_LOW; }
 
