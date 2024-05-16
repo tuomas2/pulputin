@@ -46,7 +46,7 @@ uint16_t pumpedTotal = 0;
 uint32_t heatStatistics[24]; 
 
 // EEPROM addresses
-static const uint16_t EEPROM_PUMP_STATISTICS = 0; // 48
+static const uint16_t EEPROM_PUMP_STATISTICS = 0; // 2*24 = 48
 static const uint16_t EEPROM_CONFIGURED = 48;
 static const uint16_t EEPROM_PUMP_TOTAL = 49;
 static const uint16_t EEPROM_LAST_HOUR_STARTED = 51; // 8
@@ -56,7 +56,7 @@ static const uint16_t EEPROM_LAST_WET = 75;
 static const uint16_t EEPROM_STATS_CUR_DAY = 83; // 1
 static const uint16_t EEPROM_DISPLAY_MODE = 84; // 1
 static const uint16_t EEPROM_HEATER_STARTED = 85; // 8
-static const uint16_t EEPROM_HEAT_STATISTICS = 93; // 96
+static const uint16_t EEPROM_HEAT_STATISTICS = 93; // 4*24 = 96
 static const uint16_t EEPROM_LAST = 188; 
 
 static const byte EEPROM_CHECKVALUE = 0b10101010;
