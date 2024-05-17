@@ -245,6 +245,8 @@ char lcdBuf2[BUF_SIZE];
 char floatBuf1[BUF_SIZE];
 char floatBuf2[BUF_SIZE];
 char floatBuf3[BUF_SIZE];
+char timeOrTempBuf[BUF_SIZE];
+
 
 void updateLcdSummer() {
   dtostrf((float)(pumpStatistics[0]/1000.0), 4, 1, floatBuf1);
@@ -255,12 +257,12 @@ void updateLcdSummer() {
   int32_t minutesLeft = totalMinutes - hours*60;
   uint16_t waterRemainingPercent = ((float)(CONTAINER_SIZE - pumpedTotal - 1) / CONTAINER_SIZE)*100;
   snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);
-  snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s %2u:%02u           ", 
+  snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s %s           ", 
     waterRemainingPercent,
     waterLevel ? "We" : "Dr",
     motionSns ? "Mo": "  ",
     cantStart() ? "St" : "  ", 
-    dateTimeNow.hour(), dateTimeNow.minute()
+    timeOrTempBuf
   );
 }
 
@@ -273,11 +275,11 @@ void updateLcdWinter() {
   dtostrf((float)(heatStatistics[1]/60000.0), 4, 1, floatBuf2);
   dtostrf(temperature, 4, 1, floatBuf3);
   snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);    
-  snprintf(lcdBuf2, BUF_SIZE, "%sC %s%s %2u:%02u                    ", 
+  snprintf(lcdBuf2, BUF_SIZE, "%sC %s%s %s                    ", 
     floatBuf3, 
     heaterRunning ? "He" : "  ",
     tempSensorFail ? "!!" : "  ",
-    dateTimeNow.hour(), dateTimeNow.minute()
+    timeOrTempBuf
   );
 }
 
@@ -288,7 +290,19 @@ void updateLcd() {
   bool showTimes = !digitalRead(BUTTON1_PIN);
   bool showContainer = !digitalRead(BUTTON5_PIN);
   float leftWater = (CONTAINER_SIZE - pumpedTotal)/1000.0;
+  
+  if (timeNow - modeLastChanged > 5000) {
+    modeLastChanged = timeNow;
+    modeNow = (modeNow + 1)%2;
+  }
 
+  if (modeNow == 0) {
+    snprintf(timeOrTempBuf, BUF_SIZE, "%2u:%02u               ", dateTimeNow.hour(), dateTimeNow.minute());
+  } else {
+    dtostrf(temperature, 4, 1, floatBuf3);
+    snprintf(timeOrTempBuf, BUF_SIZE, "%sC              ", floatBuf3);
+  }
+  
   if(showContainer) {
     float pumpedTotalLitres = pumpedTotal / 1000.0;
     dtostrf(pumpedTotalLitres, 0, 2, floatBuf1);
@@ -313,10 +327,6 @@ void updateLcd() {
     } else if(displayMode == DISPLAY_WINTER) {
       updateLcdWinter();
     } else if(displayMode == DISPLAY_INTERVAL) {
-      if (timeNow - modeLastChanged > 5000) {
-        modeLastChanged = timeNow;
-        modeNow = (modeNow + 1)%2;
-      }
       if(modeNow == DISPLAY_SUMMER) updateLcdSummer();
       else updateLcdWinter();
     }
