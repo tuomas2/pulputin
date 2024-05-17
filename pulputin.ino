@@ -247,6 +247,41 @@ char floatBuf2[BUF_SIZE];
 char floatBuf3[BUF_SIZE];
 
 void updateLcdSummer() {
+  dtostrf((float)(pumpStatistics[0]/1000.0), 4, 1, floatBuf1);
+  dtostrf((float)(pumpStatistics[1]/1000.0), 4, 1, floatBuf2);
+  
+  int32_t totalMinutes = minutesAgo(waterLevel ? pumpStartedMs: lastWetMs);
+  int32_t hours = totalMinutes/60;
+  int32_t minutesLeft = totalMinutes - hours*60;
+  uint16_t waterRemainingPercent = ((float)(CONTAINER_SIZE - pumpedTotal - 1) / CONTAINER_SIZE)*100;
+  snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);
+  snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s %2u:%02u           ", 
+    waterRemainingPercent,
+    waterLevel ? "We" : "Dr",
+    motionSns ? "Mo": "  ",
+    cantStart() ? "St" : "  ", 
+    dateTimeNow.hour(), dateTimeNow.minute()
+  );
+}
+
+void updateLcdWinter() {
+  int32_t totalMinutes = minutesAgo(heaterStartedMs);
+  int32_t hours = totalMinutes/60;
+  int32_t minutesLeft = totalMinutes - hours*60;
+
+  dtostrf((float)(heatStatistics[0]/60000.0), 4, 1, floatBuf1); // Show heat on in minutes 
+  dtostrf((float)(heatStatistics[1]/60000.0), 4, 1, floatBuf2);
+  dtostrf(temperature, 4, 1, floatBuf3);
+  snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);    
+  snprintf(lcdBuf2, BUF_SIZE, "%sC %s%s %2u:%02u                    ", 
+    floatBuf3, 
+    heaterRunning ? "He" : "  ",
+    tempSensorFail ? "!!" : "  ",
+    dateTimeNow.hour(), dateTimeNow.minute()
+  );
+}
+
+void updateLcd() {
   bool showForceStop = !digitalRead(BUTTON4_PIN);
   bool showResetContainer = !digitalRead(BUTTON6_PIN);
   bool backlightBtn = !digitalRead(BUTTON3_PIN);
@@ -256,7 +291,6 @@ void updateLcdSummer() {
 
   if(showContainer) {
     float pumpedTotalLitres = pumpedTotal / 1000.0;
-  
     dtostrf(pumpedTotalLitres, 0, 2, floatBuf1);
     snprintf(lcdBuf1, BUF_SIZE, "Pumped: %s l        ", floatBuf1);
     dtostrf(leftWater, 0, 2, floatBuf1);
@@ -274,59 +308,23 @@ void updateLcdSummer() {
     snprintf(lcdBuf1, BUF_SIZE, "Wet %u min ago        ", minutesAgo(lastWetMs));
     snprintf(lcdBuf2, BUF_SIZE, "Pumped %u min ago        ", minutesAgo(pumpStartedMs));
   } else {
-    dtostrf((float)(pumpStatistics[0]/1000.0), 4, 1, floatBuf1);
-    dtostrf((float)(pumpStatistics[1]/1000.0), 4, 1, floatBuf2);
-    
-    int32_t totalMinutes = minutesAgo(waterLevel ? pumpStartedMs: lastWetMs);
-    int32_t hours = totalMinutes/60;
-    int32_t minutesLeft = totalMinutes - hours*60;
-    uint16_t waterRemainingPercent = ((float)(CONTAINER_SIZE - pumpedTotal - 1) / CONTAINER_SIZE)*100;
-    snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);
-    snprintf(lcdBuf2, BUF_SIZE, "%2d%% %s%s%s %2u:%02u           ", 
-      waterRemainingPercent,
-      waterLevel ? "We" : "Dr",
-      motionSns ? "Mo": "  ",
-      cantStart() ? "St" : "  ", 
-      dateTimeNow.hour(), dateTimeNow.minute()
-    );
-  }
-}
-
-void updateLcdWinter() {
-
-    int32_t totalMinutes = minutesAgo(heaterStartedMs);
-    int32_t hours = totalMinutes/60;
-    int32_t minutesLeft = totalMinutes - hours*60;
-
-    dtostrf((float)(heatStatistics[0]/60000.0), 4, 1, floatBuf1); // Show heat on in minutes 
-    dtostrf((float)(heatStatistics[1]/60000.0), 4, 1, floatBuf2);
-    dtostrf(temperature, 4, 1, floatBuf3);
-    snprintf(lcdBuf1, BUF_SIZE, "%s %s %luh %lum         ", floatBuf1, floatBuf2, hours, minutesLeft);    
-    snprintf(lcdBuf2, BUF_SIZE, "%sC %s%s %2u:%02u                    ", 
-      floatBuf3, 
-      heaterRunning ? "He" : "  ",
-      tempSensorFail ? "!!" : "  ",
-      dateTimeNow.hour(), dateTimeNow.minute()
-    );
-}
-
-void updateLcd() {
-  if(displayMode == DISPLAY_SUMMER) {
-    updateLcdSummer();
-  } else if(displayMode == DISPLAY_WINTER) {
-    updateLcdWinter();
-  } else if(displayMode == DISPLAY_INTERVAL) {
-    if (timeNow - modeLastChanged > 5000) {
-      modeLastChanged = timeNow;
-      modeNow = (modeNow + 1)%2;
+    if(displayMode == DISPLAY_SUMMER) {
+      updateLcdSummer();
+    } else if(displayMode == DISPLAY_WINTER) {
+      updateLcdWinter();
+    } else if(displayMode == DISPLAY_INTERVAL) {
+      if (timeNow - modeLastChanged > 5000) {
+        modeLastChanged = timeNow;
+        modeNow = (modeNow + 1)%2;
+      }
+      if(modeNow == DISPLAY_SUMMER) updateLcdSummer();
+      else updateLcdWinter();
     }
-    if(modeNow == DISPLAY_SUMMER) updateLcdSummer();
-    else updateLcdWinter();
+    lcd.setCursor(0, 0);
+    lcd.print(lcdBuf1);
+    lcd.setCursor(0, 1);
+    lcd.print(lcdBuf2);
   }
-  lcd.setCursor(0, 0);
-  lcd.print(lcdBuf1);
-  lcd.setCursor(0, 1);
-  lcd.print(lcdBuf2);
 }
 
 void updateBeeper() {
@@ -548,6 +546,16 @@ void setup() {
   Serial.println(HEATER_IDLE_TIME);
 }
 
+void printAddress(DeviceAddress deviceAddress)
+{
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    // zero pad the address if necessary
+    if (deviceAddress[i] < 16) Serial.print("0");
+    Serial.print(deviceAddress[i], HEX);
+  }
+}
+
 void loop() {
   timeNow = epochAtStart + millis();
   dateTimeNow.setunixtime((timeNow / 1000) + EPOCH_OFFSET);
@@ -576,7 +584,6 @@ void loop() {
       temperature = TEMP_LIMIT + 1;
       tempSensorFail = true;
     }
-    Serial.println(temperature);
     tempLastRead = timeNow;
   }
   readInput();
