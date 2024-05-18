@@ -8,7 +8,7 @@
 #include <DallasTemperature.h>
 
 static const uint16_t ONE_WIRE_PIN = 30; // Temperature sensor
-static const uint16_t OUT_HEATER_PIN = 32;
+static const uint16_t OUT_HEATER_PIN = 34;
 
 static const uint16_t BUTTON1_PIN = 39;
 static const uint16_t BUTTON2_PIN = 41;
@@ -369,10 +369,12 @@ void readInput() {
   if(forceRunBtn != forceRunPressed) {
     if(forceRunBtn) {
       digitalWrite(OUT_PUMP_PIN, HIGH);
+      digitalWrite(OUT_HEATER_PIN, HIGH);
       digitalWrite(LED_BUILTIN, HIGH);
     } else {
+      digitalWrite(OUT_HEATER_PIN, heaterRunning ? HIGH: LOW);
       digitalWrite(OUT_PUMP_PIN, pumpRunning ? HIGH: LOW);
-      digitalWrite(LED_BUILTIN, pumpRunning ? HIGH: LOW);
+      digitalWrite(LED_BUILTIN, (pumpRunning||heaterRunning) ? HIGH: LOW);
     }
   }
   forceRunPressed = forceRunBtn;
