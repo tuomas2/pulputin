@@ -374,7 +374,7 @@ void readInput() {
     } else {
       digitalWrite(OUT_HEATER_PIN, heaterRunning ? HIGH: LOW);
       digitalWrite(OUT_PUMP_PIN, pumpRunning ? HIGH: LOW);
-      digitalWrite(LED_BUILTIN, (pumpRunning||heaterRunning) ? HIGH: LOW);
+      updateBuiltinLed();
     }
   }
   forceRunPressed = forceRunBtn;
@@ -568,6 +568,14 @@ void printAddress(DeviceAddress deviceAddress)
   }
 }
 
+void manageBuiltinLedBlink() {
+  if(timeNow/100 % 100 == 0) {
+    digitalWrite(LED_BUILTIN, HIGH);
+  } else {
+    updateBuiltinLed();
+  }
+}
+
 void loop() {
   timeNow = epochAtStart + millis();
   dateTimeNow.setunixtime((timeNow / 1000) + EPOCH_OFFSET);
@@ -604,4 +612,5 @@ void loop() {
   manageAlarm();
   updateLcd();
   updateBeeper();
+  manageBuiltinLedBlink();
 }
