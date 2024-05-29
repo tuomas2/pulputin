@@ -6,6 +6,7 @@
 #include <RTClib.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <avr/wdt.h>
 
 static const uint16_t ONE_WIRE_PIN = 30; // Temperature sensor
 static const uint16_t OUT_HEATER_PIN = 34;
@@ -135,6 +136,7 @@ static const uint32_t MOTION_STOP_TIME = ONE_MINUTE * 15;
 
 float temperature = TEMP_LIMIT + 1; // in celsius 
 bool tempSensorFail = false;
+bool showBootInfo = true;
 
 OneWire oneWire(ONE_WIRE_PIN);
 DallasTemperature sensors(&oneWire);
@@ -330,11 +332,22 @@ void updateLcd() {
       if(modeNow == DISPLAY_SUMMER) updateLcdSummer();
       else updateLcdWinter();
     }
-    lcd.setCursor(0, 0);
-    lcd.print(lcdBuf1);
+    
+    if (!showBootInfo) {
+      lcd.setCursor(0, 0);
+      lcd.print(lcdBuf1);
+    }
+    
     lcd.setCursor(0, 1);
     lcd.print(lcdBuf2);
   }
+}
+
+void printBootInfo() {
+  snprintf(timeOrTempBuf, BUF_SIZE, "%2u:%02u               ", dateTimeNow.hour(), dateTimeNow.minute());
+  snprintf(lcdBuf1, BUF_SIZE, "PRESS BTN1 %s", timeOrTempBuf);  
+  lcd.setCursor(0, 0);
+  lcd.print(lcdBuf1);
 }
 
 void updateBeeper() {
@@ -354,8 +367,12 @@ bool resetContainerPressed = false;
 bool forceRunPressed = false;
 bool modeChangePressed = false;
 
-
 void readInput() {
+  bool button1 = !digitalRead(BUTTON1_PIN);
+  if (button1) {
+    showBootInfo = false;
+  }
+
   bool modeChangeBtn = !digitalRead(BUTTON2_PIN);
   if (modeChangeBtn != modeChangePressed) {
     if(modeChangeBtn) {
@@ -556,6 +573,9 @@ void setup() {
   Serial.println("Heat params in seconds");
   Serial.println(HEATER_ON_TIME);
   Serial.println(HEATER_IDLE_TIME);
+  wdt_enable(WDTO_2S);
+  
+  printBootInfo();
 }
 
 void printAddress(DeviceAddress deviceAddress)
@@ -577,6 +597,7 @@ void manageBuiltinLedBlink() {
 }
 
 void loop() {
+  wdt_reset();
   timeNow = epochAtStart + millis();
   dateTimeNow.setunixtime((timeNow / 1000) + EPOCH_OFFSET);
 
