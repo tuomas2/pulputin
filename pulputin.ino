@@ -346,8 +346,8 @@ void updateLcd() {
 }
 
 void printBootInfo() {
-  snprintf(timeOrTempBuf, BUF_SIZE, "%2u:%02u               ", dateTimeNow.hour(), dateTimeNow.minute());
-  snprintf(lcdBuf1, BUF_SIZE, "PRESS BTN1 %s", timeOrTempBuf);  
+  snprintf(timeOrTempBuf, BUF_SIZE, "%u.%u %2u:%02u               ", dateTimeNow.day(), dateTimeNow.month(), dateTimeNow.hour(), dateTimeNow.minute());
+  snprintf(lcdBuf1, BUF_SIZE, "BTN1 %s", timeOrTempBuf);  
   lcd.setCursor(0, 0);
   lcd.print(lcdBuf1);
 }
