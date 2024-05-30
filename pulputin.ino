@@ -130,6 +130,8 @@ static const uint32_t PUMP_TIME = mlToMs(PUMP_PORTION);
 static const uint32_t IDLE_TIME = PERIOD_TIME - PUMP_TIME;
 
 static const uint32_t WET_TIME = ONE_HOUR;
+static const uint32_t DRY_TOO_LONG_TIME = ONE_HOUR*48;
+
 static const uint32_t FORCE_STOP_TIME = ONE_HOUR;
 static const uint32_t MOTION_STOP_TIME = ONE_MINUTE * 15;
 
@@ -493,6 +495,8 @@ void resetMaxWaterLevel() {
 bool stopPumpTimePassed() { return timeNow - pumpStartedMs > PUMP_TIME;}
 bool idleTimePassed() { return timeNow - idleStartedMs > IDLE_TIME; }
 bool wetRecently() { return wasWet && (timeNow - lastWetMs < WET_TIME); }
+bool dryTooLong() { return timeNow - lastWetMs > DRY_TOO_LONG_TIME; }
+
 bool forceStoppedRecently() { return wasForceStopped && (timeNow - forceStopStartedMs < FORCE_STOP_TIME); }
 bool motionStoppedRecently() { return wasMotionStopped && (timeNow - motionStopStartedMs < MOTION_STOP_TIME); }
 
@@ -535,7 +539,7 @@ void manageHeater() {
 
 void manageAlarm() {
   float leftWater = (CONTAINER_SIZE - pumpedTotal)/1000.0;
-  alarmRunning = tempSensorFail || isAlarmTemp() || (leftWater < 5.0 && !forceStoppedRecently());
+  alarmRunning = dryTooLong() || showBootInfo || tempSensorFail || isAlarmTemp() || (leftWater < 5.0 && !forceStoppedRecently());
 }
 
 void printStats() {
