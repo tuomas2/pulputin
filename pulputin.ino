@@ -246,6 +246,10 @@ void resetEEPROM() {
 static const uint16_t BUF_SIZE = 18;
 char lcdBuf1[BUF_SIZE];
 char lcdBuf2[BUF_SIZE];
+
+char lcdBuf1a[BUF_SIZE];
+char lcdBuf2a[BUF_SIZE];
+
 char floatBuf1[BUF_SIZE];
 char floatBuf2[BUF_SIZE];
 char floatBuf3[BUF_SIZE];
@@ -335,13 +339,16 @@ void updateLcd() {
       else updateLcdWinter();
     }
     
-    if (!showBootInfo) {
+    if (!showBootInfo && strcmp(lcdBuf1a, lcdBuf1) != 0) {
       lcd.setCursor(0, 0);
       lcd.print(lcdBuf1);
+      strcpy(lcdBuf1a, lcdBuf1);
     }
-    
-    lcd.setCursor(0, 1);
-    lcd.print(lcdBuf2);
+    if (strcmp(lcdBuf2a, lcdBuf2) != 0) {
+      lcd.setCursor(0, 1);
+      lcd.print(lcdBuf2);
+      strcpy(lcdBuf2a, lcdBuf2);
+    }
   }
 }
 
