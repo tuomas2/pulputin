@@ -7,7 +7,6 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <avr/wdt.h>
-#include <LowPower.h>
 
 static const uint16_t ONE_WIRE_PIN = 30; // Temperature sensor
 static const uint16_t OUT_HEATER_PIN = 34;
@@ -360,12 +359,32 @@ void printBootInfo() {
   lcd.print(lcdBuf1);
 }
 
+uint64_t blinkStoppedMs = 0;
+uint64_t blinkStartedMs = 0;
+bool blinkNow = false;
+
+void manageBlink() {
+  if(!blinkNow && (timeNow - blinkStoppedMs > 10000)) {
+    blinkNow = true;
+    blinkStartedMs = timeNow;
+  }
+  if(blinkNow && (timeNow - blinkStartedMs > 20)) {
+    blinkNow = false;
+    blinkStoppedMs = timeNow;
+  }
+}
+
 void updateBeeper() {
   bool backlightBtn = !digitalRead(BUTTON3_PIN);
-  if(backlightBtn || (alarmRunning && timeNow/100 % 100 == 0)) {
-    analogWrite(ALARM_PIN, 50);
+  bool beep = blinkNow && (backlightBtn || alarmRunning);
+  analogWrite(ALARM_PIN, beep ? 50 : 0);
+}
+
+void manageBuiltinLedBlink() {
+  if(blinkNow) {
+    digitalWrite(LED_BUILTIN, HIGH);
   } else {
-    analogWrite(ALARM_PIN, 0);
+    updateBuiltinLed();
   }
 }
 
@@ -555,8 +574,9 @@ void printStats() {
     Serial.println(pumpStatistics[i]);
   }
 }
-
+uint32_t counter = 0;
 void setup() {
+  wdt_enable(WDTO_2S);
   Serial.begin(9600);
   Wire.begin();
   rtc.begin();
@@ -585,7 +605,6 @@ void setup() {
   Serial.println("Heat params in seconds");
   Serial.println(HEATER_ON_TIME);
   Serial.println(HEATER_IDLE_TIME);
-  wdt_enable(WDTO_2S);
   
   printBootInfo();
 }
@@ -597,14 +616,6 @@ void printAddress(DeviceAddress deviceAddress)
     // zero pad the address if necessary
     if (deviceAddress[i] < 16) Serial.print("0");
     Serial.print(deviceAddress[i], HEX);
-  }
-}
-
-void manageBuiltinLedBlink() {
-  if(timeNow/100 % 100 == 0) {
-    digitalWrite(LED_BUILTIN, HIGH);
-  } else {
-    updateBuiltinLed();
   }
 }
 
@@ -644,7 +655,14 @@ void loop() {
   manageHeater();
   manageAlarm();
   updateLcd();
+  manageBlink();
   updateBeeper();
   manageBuiltinLedBlink();
-  LowPower.powerDown(SLEEP_30MS, ADC_OFF, BOD_OFF);
+  counter++;
+  if(false && counter % 1000 == 0) {
+    Serial.println("speed");
+    Serial.println(counter);
+    Serial.println(millis());
+    Serial.println(1000*counter/millis());
+  }
 }
