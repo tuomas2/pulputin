@@ -7,6 +7,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <avr/wdt.h>
+#include <LowPower.h>
 
 static const uint16_t ONE_WIRE_PIN = 30; // Temperature sensor
 static const uint16_t OUT_HEATER_PIN = 34;
@@ -645,4 +646,5 @@ void loop() {
   updateLcd();
   updateBeeper();
   manageBuiltinLedBlink();
+  LowPower.powerDown(SLEEP_30MS, ADC_OFF, BOD_OFF);
 }
