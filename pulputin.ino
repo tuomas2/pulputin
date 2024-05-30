@@ -376,7 +376,7 @@ void manageBlink() {
 
 void updateBeeper() {
   bool backlightBtn = !digitalRead(BUTTON3_PIN);
-  bool beep = blinkNow && (backlightBtn || alarmRunning);
+  bool beep = backlightBtn || (blinkNow && alarmRunning);
   analogWrite(ALARM_PIN, beep ? 50 : 0);
 }
 
