@@ -369,7 +369,7 @@ void manageBlink() {
     blinkNow = true;
     blinkStartedMs = timeNow;
   }
-  if(blinkNow && (timeNow - blinkStartedMs > 20)) {
+  if(blinkNow && (timeNow - blinkStartedMs > 50)) {
     blinkNow = false;
     blinkStoppedMs = timeNow;
   }
@@ -609,18 +609,7 @@ void setup() {
   Serial.println("Heat params in seconds");
   Serial.println(HEATER_ON_TIME);
   Serial.println(HEATER_IDLE_TIME);
-  
   printBootInfo();
-}
-
-void printAddress(DeviceAddress deviceAddress)
-{
-  for (uint8_t i = 0; i < 8; i++)
-  {
-    // zero pad the address if necessary
-    if (deviceAddress[i] < 16) Serial.print("0");
-    Serial.print(deviceAddress[i], HEX);
-  }
 }
 
 unsigned long millisAdd = 0;
@@ -668,11 +657,12 @@ void loop() {
   updateBeeper();
   manageBuiltinLedBlink();
   counter++;
-  if(false && counter % 1000 == 0) {
+  if(false && counter % 100 == 0) {
     Serial.println("speed");
     Serial.println(counter);
     Serial.println(myMillis());
     Serial.println(1000*counter/myMillis());
+    Serial.flush();
   }
   if(!isBeeping()) {
     LowPower.powerDown(SLEEP_120MS, ADC_OFF, BOD_ON);
