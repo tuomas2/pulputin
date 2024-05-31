@@ -631,6 +631,7 @@ void loop() {
   }
 
   // We do not want to fix clock (because it might jump backwards) during operations.
+  // It would mess up time based volume etc. calculations
   if (timeNow - lastTimeClockCorrected > FIFTEEN_MINUTES && !isOperating()) {    
     int32_t correction = rtc.now().unixtime() - dateTimeNow.unixtime();
     epochAtStart += correction * 1000;
