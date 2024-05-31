@@ -365,7 +365,7 @@ uint64_t blinkStartedMs = 0;
 bool blinkNow = false;
 
 void manageBlink() {
-  if(!blinkNow && (timeNow - blinkStoppedMs > 10000)) {
+  if(!blinkNow && (timeNow - blinkStoppedMs > 30000)) {
     blinkNow = true;
     blinkStartedMs = timeNow;
   }
