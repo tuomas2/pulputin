@@ -9,6 +9,7 @@ Uses libs:
  - [RTCLib](https://github.com/NeiroNx/RTCLib) by NeironN by JeeLabs, version 1.6.3 from Arduino Library
  - [OneWire](https://github.com/PaulStoffregen/OneWire) version 2.3.7
  - [DallasTemperature](https://github.com/milesburton/Arduino-Temperature-Control-Library) version 3.9.0 
+ - [LowPower](https://github.com/LowPowerLab/LowPower) version 2.2
 
 Pictures
 --------

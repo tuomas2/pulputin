@@ -7,6 +7,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <avr/wdt.h>
+#include <LowPower.h>
 
 static const uint16_t ONE_WIRE_PIN = 30; // Temperature sensor
 static const uint16_t OUT_HEATER_PIN = 34;
@@ -619,9 +620,14 @@ void printAddress(DeviceAddress deviceAddress)
   }
 }
 
+unsigned long millisAdd = 0;
+unsigned long myMillis() {
+  return millis() + millisAdd;
+}
+
 void loop() {
   wdt_reset();
-  timeNow = epochAtStart + millis();
+  timeNow = epochAtStart + myMillis();
   dateTimeNow.setunixtime((timeNow / 1000) + EPOCH_OFFSET);
 
   if(dateTimeNow.day() != statisticsCurrentDay) {
@@ -633,7 +639,7 @@ void loop() {
   if (timeNow - lastHourStarted > ONE_HOUR && !pumpRunning) {    
     int32_t correction = rtc.now().unixtime() - dateTimeNow.unixtime();
     epochAtStart += correction * 1000;
-    timeNow = epochAtStart + millis();
+    timeNow = epochAtStart + myMillis();
 
     lastHourStarted = timeNow;
     saveEeprom();
@@ -662,7 +668,13 @@ void loop() {
   if(false && counter % 1000 == 0) {
     Serial.println("speed");
     Serial.println(counter);
-    Serial.println(millis());
-    Serial.println(1000*counter/millis());
+    Serial.println(myMillis());
+    Serial.println(1000*counter/myMillis());
+  }
+  if(!blinkNow && !alarmRunning) {
+    LowPower.powerDown(SLEEP_60MS, ADC_OFF, BOD_ON);
+    millisAdd += 60;
+    // LowPower disables, so let's re-enable.
+    wdt_enable(WDTO_2S);
   }
 }
