@@ -675,8 +675,8 @@ void loop() {
     Serial.println(1000*counter/myMillis());
   }
   if(!isBeeping()) {
-    LowPower.powerDown(SLEEP_60MS, ADC_OFF, BOD_ON);
-    millisAdd += 60;
+    LowPower.powerDown(SLEEP_120MS, ADC_OFF, BOD_ON);
+    millisAdd += 120;
     // LowPower disables, so let's re-enable.
     wdt_enable(WDTO_2S);
   }
