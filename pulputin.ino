@@ -51,7 +51,7 @@ uint32_t heatStatistics[24];
 static const uint16_t EEPROM_PUMP_STATISTICS = 0; // 2*24 = 48
 static const uint16_t EEPROM_CONFIGURED = 48;
 static const uint16_t EEPROM_PUMP_TOTAL = 49;
-static const uint16_t EEPROM_LAST_HOUR_STARTED = 51; // 8
+static const uint16_t EEPROM_LAST_TIME_CLOCK_CORRECTED = 51; // 8
 static const uint16_t EEPROM_PUMP_STARTED = 59; // 8
 static const uint16_t EEPROM_IDLE_STARTED = 67; // 8
 static const uint16_t EEPROM_LAST_WET = 75;
@@ -70,7 +70,7 @@ uint64_t epochAtStart = 0;
 uint64_t timeNow = 0;
 DateTime dateTimeNow;
 
-uint64_t lastHourStarted = 0;
+uint64_t lastTimeClockCorrected = 0;
 uint64_t tempLastRead = 0;
 uint64_t modeLastChanged = 0;
 
@@ -106,6 +106,7 @@ uint32_t msToMl(uint64_t milliseconds) { return milliseconds * PUMP_WATER_SPEED 
 static const uint32_t ONE_SECOND = 1000;
 static const uint32_t ONE_HOUR = 3600000;
 static const uint32_t ONE_MINUTE = ONE_HOUR/60;
+static const uint32_t FIFTEEN_MINUTES = ONE_MINUTE*15;
 
 static const float TEMP_LIMIT = 8.0;
 static const float TEMP_ALARM_LOW = 5.0;
@@ -186,7 +187,7 @@ void readEeprom() {
 
   pumpedTotal = eeprom_read_word(EEPROM_PUMP_TOTAL);
 
-  eeprom_read_block(&lastHourStarted, EEPROM_LAST_HOUR_STARTED, 8);
+  eeprom_read_block(&lastTimeClockCorrected, EEPROM_LAST_TIME_CLOCK_CORRECTED, 8);
   eeprom_read_block(&pumpStartedMs, EEPROM_PUMP_STARTED, 8); 
   eeprom_read_block(&idleStartedMs, EEPROM_IDLE_STARTED, 8); 
   eeprom_read_block(&heaterStartedMs, EEPROM_HEATER_STARTED, 8); 
@@ -205,7 +206,7 @@ void saveEeprom() {
  
   eeprom_update_word(EEPROM_PUMP_TOTAL, pumpedTotal);
   
-  eeprom_update_block(&lastHourStarted, EEPROM_LAST_HOUR_STARTED, 8);
+  eeprom_update_block(&lastTimeClockCorrected, EEPROM_LAST_TIME_CLOCK_CORRECTED, 8);
   eeprom_update_block(&pumpStartedMs, EEPROM_PUMP_STARTED, 8);
   eeprom_update_block(&idleStartedMs, EEPROM_IDLE_STARTED, 8);
   eeprom_update_block(&heaterStartedMs, EEPROM_HEATER_STARTED, 8);
@@ -233,7 +234,7 @@ void resetEEPROM() {
   }
 
   pumpedTotal = 0;
-  lastHourStarted = timeNow;
+  lastTimeClockCorrected = timeNow;
   pumpStartedMs = timeNow;
   idleStartedMs = timeNow;
   lastWetMs = 0;
@@ -535,6 +536,7 @@ bool stopHeaterTimePassed() { return timeNow - heaterStartedMs > HEATER_ON_TIME;
 bool heaterIdleTimePassed() { return timeNow - heaterIdleStartedMs > HEATER_IDLE_TIME; }
 bool isTriggerTemp() { return temperature < TEMP_LIMIT; }
 bool isAlarmTemp() { return temperature < TEMP_ALARM_LOW; }
+bool isOperating() { return pumpRunning || heaterRunning; }
 
 bool cantStart() { return isTriggerTemp() || wetRecently() || forceStoppedRecently() || motionStoppedRecently(); }
 
@@ -628,12 +630,12 @@ void loop() {
     saveEeprom();
   }
 
-  if (timeNow - lastHourStarted > ONE_HOUR && !pumpRunning) {    
+  // We do not want to fix clock (because it might jump backwards) during operations.
+  if (timeNow - lastTimeClockCorrected > FIFTEEN_MINUTES && !isOperating()) {    
     int32_t correction = rtc.now().unixtime() - dateTimeNow.unixtime();
     epochAtStart += correction * 1000;
     timeNow = epochAtStart + myMillis();
-
-    lastHourStarted = timeNow;
+    lastTimeClockCorrected = timeNow;
     saveEeprom();
   }
   if (timeNow - tempLastRead > 10000) {
