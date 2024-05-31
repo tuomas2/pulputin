@@ -375,10 +375,13 @@ void manageBlink() {
   }
 }
 
-void updateBeeper() {
+bool isBeeping() {
   bool backlightBtn = !digitalRead(BUTTON3_PIN);
-  bool beep = backlightBtn || (blinkNow && alarmRunning);
-  analogWrite(ALARM_PIN, beep ? 50 : 0);
+  return backlightBtn || (blinkNow && alarmRunning);
+}
+
+void updateBeeper() {
+  analogWrite(ALARM_PIN, isBeeping() ? 50 : 0);
 }
 
 void manageBuiltinLedBlink() {
@@ -671,7 +674,7 @@ void loop() {
     Serial.println(myMillis());
     Serial.println(1000*counter/myMillis());
   }
-  if(!blinkNow && !alarmRunning) {
+  if(!isBeeping()) {
     LowPower.powerDown(SLEEP_60MS, ADC_OFF, BOD_ON);
     millisAdd += 60;
     // LowPower disables, so let's re-enable.
