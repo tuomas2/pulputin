@@ -1,13 +1,17 @@
 // Copyright (C) 2023 Tuomas Airaksinen
 // License: GPL. See GPL.txt for more info
 
+#define USE_LOWPOWER 0
+
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
 #include <RTClib.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <avr/wdt.h>
-#include <LowPower.h>
+#ifdef USE_LOWPOWER
+  #include <LowPower.h>
+#endif
 
 static const uint16_t ONE_WIRE_PIN = 30; // Temperature sensor
 static const uint16_t OUT_HEATER_PIN = 34;
@@ -667,10 +671,12 @@ void loop() {
     Serial.println(1000*counter/myMillis());
     Serial.flush();
   }
+  #ifdef USE_LOWPOWER
   if(!isBeeping()) {
     LowPower.powerDown(SLEEP_120MS, ADC_OFF, BOD_ON);
     millisAdd += 120;
     // LowPower disables, so let's re-enable.
     wdt_enable(WDTO_2S);
   }
+  #endif
 }
