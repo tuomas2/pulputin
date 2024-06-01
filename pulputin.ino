@@ -55,7 +55,10 @@ uint32_t heatStatistics[24];
 static const uint16_t EEPROM_PUMP_STATISTICS = 0; // 2*24 = 48
 static const uint16_t EEPROM_CONFIGURED = 48;
 static const uint16_t EEPROM_PUMP_TOTAL = 49;
+
+// NOT NEEDED. ADDRESS CAN BE USED FOR OTHER PURPOSE LATER...
 // static const uint16_t EEPROM_LAST_TIME_CLOCK_CORRECTED = 51; // 8
+
 static const uint16_t EEPROM_PUMP_STARTED = 59; // 8
 static const uint16_t EEPROM_IDLE_STARTED = 67; // 8
 static const uint16_t EEPROM_LAST_WET = 75;
@@ -191,7 +194,6 @@ void readEeprom() {
 
   pumpedTotal = eeprom_read_word(EEPROM_PUMP_TOTAL);
 
-  // eeprom_read_block(&lastTimeClockCorrected, EEPROM_LAST_TIME_CLOCK_CORRECTED, 8);
   eeprom_read_block(&pumpStartedMs, EEPROM_PUMP_STARTED, 8); 
   eeprom_read_block(&idleStartedMs, EEPROM_IDLE_STARTED, 8); 
   eeprom_read_block(&heaterStartedMs, EEPROM_HEATER_STARTED, 8); 
@@ -210,7 +212,6 @@ void saveEeprom() {
  
   eeprom_update_word(EEPROM_PUMP_TOTAL, pumpedTotal);
   
-  // eeprom_update_block(&lastTimeClockCorrected, EEPROM_LAST_TIME_CLOCK_CORRECTED, 8);
   eeprom_update_block(&pumpStartedMs, EEPROM_PUMP_STARTED, 8);
   eeprom_update_block(&idleStartedMs, EEPROM_IDLE_STARTED, 8);
   eeprom_update_block(&heaterStartedMs, EEPROM_HEATER_STARTED, 8);
@@ -238,7 +239,6 @@ void resetEEPROM() {
   }
 
   pumpedTotal = 0;
-  lastTimeClockCorrected = timeNow;
   pumpStartedMs = timeNow;
   idleStartedMs = timeNow;
   lastWetMs = 0;
