@@ -103,7 +103,7 @@ bool heaterRunning = false;
 
 uint16_t minutesAgo(uint64_t timestamp) { return (timeNow - timestamp) / 1000 / 60; }
 
-static const uint16_t PUMP_WATER_SPEED = 116;  // Pump speed, ml per 100 seconds
+static const uint16_t PUMP_WATER_SPEED = 106;  // Pump speed, ml per 100 seconds
 
 // Convert millilitres to milliseconds and vice versa
 uint64_t mlToMs(uint32_t millilitres) { return 100000 * millilitres / PUMP_WATER_SPEED; }
@@ -129,7 +129,7 @@ static const uint8_t DISPLAY_INTERVAL = 2;
 
 uint8_t modeNow = DISPLAY_SUMMER;
 
-static const uint16_t CONTAINER_SIZE = 30000;  // Water container size in (ml)
+static const uint16_t CONTAINER_SIZE = 28000;  // Water container size in (ml)
 
 static const uint16_t PUMP_PORTION = 100;       // Amount of water pumped at once (ml)
 static const uint32_t PERIOD_TIME = 15*ONE_MINUTE; // Adjusted water amount is PUMP_PORTION / PERIOD_TIME.
@@ -344,17 +344,16 @@ void updateLcd() {
       if(modeNow == DISPLAY_SUMMER) updateLcdSummer();
       else updateLcdWinter();
     }
-    
-    if (!showBootInfo && strcmp(lcdBuf1a, lcdBuf1) != 0) {
-      lcd.setCursor(0, 0);
-      lcd.print(lcdBuf1);
-      strcpy(lcdBuf1a, lcdBuf1);
-    }
-    if (strcmp(lcdBuf2a, lcdBuf2) != 0) {
-      lcd.setCursor(0, 1);
-      lcd.print(lcdBuf2);
-      strcpy(lcdBuf2a, lcdBuf2);
-    }
+  }
+  if (!showBootInfo && strcmp(lcdBuf1a, lcdBuf1) != 0) {
+    lcd.setCursor(0, 0);
+    lcd.print(lcdBuf1);
+    strcpy(lcdBuf1a, lcdBuf1);
+  }
+  if (strcmp(lcdBuf2a, lcdBuf2) != 0) {
+    lcd.setCursor(0, 1);
+    lcd.print(lcdBuf2);
+    strcpy(lcdBuf2a, lcdBuf2);
   }
 }
 
