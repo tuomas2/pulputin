@@ -1,7 +1,7 @@
 // Copyright (C) 2023 Tuomas Airaksinen
 // License: GPL. See GPL.txt for more info
 
-#define USE_LOWPOWER 0
+// #define USE_LOWPOWER
 
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
@@ -575,7 +575,7 @@ void manageHeater() {
 
 void manageAlarm() {
   float leftWater = (CONTAINER_SIZE - pumpedTotal)/1000.0;
-  alarmRunning = dryTooLong() || showBootInfo || tempSensorFail || isAlarmTemp() || (leftWater < 5.0 && !forceStoppedRecently());
+  alarmRunning = dryTooLong() || showBootInfo || tempSensorFail || isAlarmTemp() || (leftWater < 7.5 && !forceStoppedRecently());
 }
 
 void printStats() {
