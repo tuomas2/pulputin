@@ -422,8 +422,12 @@ void readInput() {
   bool forceRunBtn = !digitalRead(BUTTON7_PIN);
   if(forceRunBtn != forceRunPressed) {
     if(forceRunBtn) {
-      digitalWrite(OUT_PUMP_PIN, HIGH);
-      digitalWrite(OUT_HEATER_PIN, HIGH);
+      if(isWinter()) {
+        digitalWrite(OUT_HEATER_PIN, HIGH);
+      } else {
+        digitalWrite(OUT_PUMP_PIN, HIGH);
+      } 
+      
       digitalWrite(LED_BUILTIN, HIGH);
     } else {
       digitalWrite(OUT_HEATER_PIN, heaterRunning ? HIGH: LOW);
