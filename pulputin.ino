@@ -115,7 +115,7 @@ static const uint32_t ONE_HOUR = 3600000;
 static const uint32_t ONE_MINUTE = ONE_HOUR/60;
 static const uint32_t FIFTEEN_MINUTES = ONE_MINUTE*15;
 
-static const float TEMP_LIMIT = 8.0;
+static const float TEMP_LIMIT = 10.0;
 static const float TEMP_ALARM_LOW = 5.0;
 
 static const uint32_t HEATER_POWER = 50; // Watts
@@ -310,7 +310,7 @@ void updateLcd() {
     modeNow = (modeNow + 1)%2;
   }
 
-  if (modeNow == 0) {
+  if (displayMode == DISPLAY_WINTER || modeNow == 0) {
     snprintf(timeOrTempBuf, BUF_SIZE, "%2u:%02u               ", dateTimeNow.hour(), dateTimeNow.minute());
   } else {
     dtostrf(temperature, 4, 1, floatBuf3);
@@ -540,8 +540,9 @@ bool heaterIdleTimePassed() { return timeNow - heaterIdleStartedMs > HEATER_IDLE
 bool isTriggerTemp() { return temperature < TEMP_LIMIT; }
 bool isAlarmTemp() { return temperature < TEMP_ALARM_LOW; }
 bool isOperating() { return pumpRunning || heaterRunning; }
+bool isWinter() { return true; }
 
-bool cantStart() { return isTriggerTemp() || wetRecently() || forceStoppedRecently() || motionStoppedRecently(); }
+bool cantStart() { return isWinter() || isTriggerTemp() || wetRecently() || forceStoppedRecently() || motionStoppedRecently(); }
 
 void manageWaterPump() {
   updateMaxWaterLevel();
@@ -575,8 +576,17 @@ void manageHeater() {
 
 void manageAlarm() {
   float leftWater = (CONTAINER_SIZE - pumpedTotal)/1000.0;
-  alarmRunning = dryTooLong() || showBootInfo || tempSensorFail || isAlarmTemp() || (leftWater < 7.5 && !forceStoppedRecently());
+  alarmRunning = (!isWinter() && dryTooLong()) || showBootInfo || tempSensorFail || isAlarmTemp() || (!isWinter() && (leftWater < 7.5 && !forceStoppedRecently()));
 }
+
+void alarmReason() {
+  float leftWater = (CONTAINER_SIZE - pumpedTotal)/1000.0;
+  Serial.println(leftWater);
+  Serial.println(dryTooLong());
+  Serial.println(isWinter());
+  Serial.println(tempSensorFail);
+}
+
 
 void printStats() {
   for(uint16_t i = 0; i<24; i++) {
