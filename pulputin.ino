@@ -115,8 +115,8 @@ static const uint32_t ONE_HOUR = 3600000;
 static const uint32_t ONE_MINUTE = ONE_HOUR/60;
 static const uint32_t FIFTEEN_MINUTES = ONE_MINUTE*15;
 
-static const float TEMP_LIMIT = 10.0;
-static const float TEMP_ALARM_LOW = 5.0;
+static const float TEMP_LIMIT = 5.0;
+static const float TEMP_ALARM_LOW = 3.0;
 
 static const uint32_t HEATER_POWER = 50; // Watts
 static const uint32_t TARGET_POWER = 1; // Watts
@@ -489,6 +489,7 @@ void startHeat() {
 void stopHeat() {
   Serial.println("stopHeat");
   heaterRunning = false;
+  digitalWrite(OUT_HEATER_PIN, LOW);
   heaterIdleStartedMs = timeNow;
   uint32_t heaterTime = timeNow - heaterStartedMs;
   heatStatistics[0] += heaterTime;
