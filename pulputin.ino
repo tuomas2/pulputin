@@ -119,7 +119,7 @@ static const float TEMP_LIMIT = 5.0;
 static const float TEMP_ALARM_LOW = 3.0;
 
 static const uint32_t HEATER_POWER = 50; // Watts
-static const uint32_t TARGET_POWER = 1; // Watts
+static const uint32_t TARGET_POWER = 5; // Watts
 static const uint32_t HEATER_ON_TIME = 5*ONE_SECOND;
 static const uint32_t HEATER_IDLE_TIME = HEATER_POWER * (float)HEATER_ON_TIME / TARGET_POWER - HEATER_ON_TIME;  
 
